@@ -1,17 +1,21 @@
 {
   "backend": "comfy",
   "llm_model": "jarvis-mark7:latest",
+  "vision_model": "moondream:latest",
   "llm_on_cpu": false,
+  "cpu_threads": 12,
   "low_memory": false,
+  "unload_before_generate": true,
+  "comfy_args": "--lowvram --fp32-vae --listen 127.0.0.1 --port 8188",
   "image": {
     "checkpoint": "DreamShaper_8_pruned.safetensors",
-    "width": 512,
+    "width": 576,
     "height": 768,
     "steps": 25,
     "cfg": 7.0,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
-    "negative": "lowres, blurry, bad anatomy, bad hands, text, watermark, deformed, ugly, jpeg artifacts"
+    "negative": "lowres, blurry, bad anatomy, bad hands, extra fingers, text, watermark, deformed, ugly, jpeg artifacts, worst quality"
   },
   "video": {
     "unet": "wan2.1_t2v_1.3B_fp16.safetensors",
@@ -32,6 +36,11 @@
     "script_model": "jarvis-cinema:latest",
     "script_on_gpu": true,
     "scenes_per_minute": 5,
+    "video_width": 1920,
+    "video_height": 1080,
+    "fps": 30,
+    "use_nvenc": true,
+    "render_workers": 3,
     "image": {
       "width": 768,
       "height": 432
@@ -40,7 +49,9 @@
   "chat": {
     "model": "jarvis-mark7:latest",
     "on_cpu": false,
-    "num_ctx": 8192,
-    "history_chars": 16000
+    "num_ctx": 16384,
+    "history_chars": 24000,
+    "keep_alive": "15m",
+    "temperature": 0.65
   }
 }

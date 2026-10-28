@@ -1,9 +1,8 @@
 """Agente Engenheiro de Software Autônomo Local (CodeMind + J.A.R.V.I.S.).
 
 Cria pastas e múltiplos arquivos de código automaticamente no seu PC usando o Ollama local
-(sem precisar de chave de API paga).
+acelerado pela GPU NVIDIA GTX 1660 Super (sem precisar de chave de API paga).
 """
-import os
 from pathlib import Path
 import re
 import backends as B
@@ -41,7 +40,7 @@ def salvar_arquivos_gerados(resposta_texto: str, pasta_destino: str = "projeto_g
 
 
 def executar_agente():
-    print("🚀 Agente Programador Autônomo (CodeMind + J.A.R.V.I.S.) Iniciado!")
+    print("🚀 Agente Programador Autônomo (CodeMind + J.A.R.V.I.S. Pro GPU) Iniciado!")
     while True:
         pedido = input("\nDescreva o software que deseja criar (ou 'sair'): ").strip()
         if not pedido or pedido.lower() == "sair":
@@ -51,8 +50,8 @@ def executar_agente():
         for tok in B.llm_stream(
             [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": pedido}],
             model="jarvis-coder:latest",
-            on_cpu=True,
-            num_ctx=8192,
+            on_cpu=B.CFG.get("llm_on_cpu", False),
+            num_ctx=16384,
             temperature=0.2,
         ):
             print(tok, end="", flush=True)

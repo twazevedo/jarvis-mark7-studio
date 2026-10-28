@@ -1,12 +1,13 @@
-"""J.A.R.V.I.S - Servidor Central Mark VII v4.0 (Completo com Visão de Tela, Computer Use e Criador de Tarefas em Tempo Real).
+"""J.A.R.V.I.S - Servidor Central Mark VII v5.0 Pro (Otimizado para AMD Ryzen 7 5700G + NVIDIA GTX 1660 Super 6GB).
 
-Integra todos os módulos da série de 6 vídeos (Inteligência Mil Grau — Jarvis / Junin v8):
-- Parte 1 & 4: Visão Computacional da Tela (`tasks_folder/handle_image.py` + `screen_vision.py`)
+Integra todos os módulos da série de 6 vídeos (Inteligência Mil Grau — Jarvis / Junin v8) + Telemetria GPU CUDA:
+- Parte 1 & 4: Visão Computacional Híbrida (GPU Vision + OCR Nativo Windows) (`tasks_folder/handle_image.py` + `screen_vision.py`)
 - Parte 2 & 4: Clicar Onde Quiser na Tela com Detecção de Coordenadas (`tasks_folder/handle_click.py`)
 - Parte 3: Voz Humana em Tempo Real com VAD Dinâmico e Trava Anti-Eco
 - Parte 4 & 6: Digitação Automática e Controle de Mouse/Teclado (`tasks_folder/automatic_text_typing.py`)
 - Parte 6 & 7: Gerenciador Modular (`task_manager.py`) + Criador de Tarefas Python em Tempo Real (`tasks_folder/nova_tarefa.py` + `snake_game.py`)
-- Geração Local de Imagens, Vídeos Curtos e Documentários Longos de 10–20+ min
+- Otimizador de GPU/VRAM & Memória (`tasks_folder/gpu_booster.py`)
+- Geração Local de Imagens, Vídeos Curtos Wan 2.1 e Documentários Full HD 1080p NVENC de 10–20+ min
 """
 import ctypes
 from datetime import datetime
@@ -29,7 +30,7 @@ import task_manager as TM
 import voice
 import websearch
 
-SERVER_VERSION = "4.5"
+SERVER_VERSION = "5.0"
 CFG = B.CFG
 ROOT = B.ROOT
 OUT = ROOT / "outputs"
@@ -53,7 +54,7 @@ TITLE = CFG["user_title"]
 MEM_LOCK = threading.Lock()
 
 
-# ---------------------------------------------------------------- Telemetria Nativa Windows
+# ---------------------------------------------------------------- Telemetria Nativa Windows + GPU NVIDIA GTX 1660 Super
 class _MEMORYSTATUSEX(ctypes.Structure):
     _fields_ = [
         ("dwLength", ctypes.c_ulong),
@@ -73,14 +74,73 @@ class _FILETIME(ctypes.Structure):
 
 
 _LAST_CPU_TIMES = (0, 0, 0)
+_LAST_GPU_CACHE: tuple[float, dict] = (0.0, {})
 
 
 def _ft_to_int(ft: _FILETIME) -> int:
     return (ft.dwHighDateTime << 32) | ft.dwLowDateTime
 
 
+def _get_gpu_telemetry() -> dict:
+    """Lê carga, VRAM, temperatura (°C) e potência (W) da NVIDIA GTX 1660 Super (cache de 2s)."""
+    global _LAST_GPU_CACHE
+    now = time.time()
+    if now - _LAST_GPU_CACHE[0] < 2.0 and _LAST_GPU_CACHE[1]:
+        return _LAST_GPU_CACHE[1]
+    res = {
+        "gpu_available": False,
+        "gpu_name": "CPU Mode",
+        "gpu_pct": 0,
+        "gpu_temp": 0,
+        "gpu_power_w": 0.0,
+        "vram_used_gb": 0.0,
+        "vram_total_gb": 0.0,
+        "vram_pct": 0,
+    }
+    if not shutil.which("nvidia-smi"):
+        _LAST_GPU_CACHE = (now, res)
+        return res
+    try:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        p = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            creationflags=flags,
+        )
+        if p.returncode == 0 and p.stdout.strip():
+            parts = [x.strip() for x in p.stdout.strip().splitlines()[0].split(",")]
+            if len(parts) >= 6:
+                raw_name = parts[0].replace("NVIDIA GeForce ", "").strip()
+                util = int(float(parts[1])) if parts[1].replace(".", "").isdigit() else 0
+                mem_u = float(parts[2]) if parts[2].replace(".", "").isdigit() else 0.0
+                mem_t = float(parts[3]) if parts[3].replace(".", "").isdigit() else 6144.0
+                temp = int(float(parts[4])) if parts[4].replace(".", "").isdigit() else 0
+                pwr = round(float(parts[5]), 1) if parts[5].replace(".", "").isdigit() else 0.0
+                vram_pct = int(round(100.0 * mem_u / max(1.0, mem_t)))
+                res = {
+                    "gpu_available": True,
+                    "gpu_name": raw_name,
+                    "gpu_pct": util,
+                    "gpu_temp": temp,
+                    "gpu_power_w": pwr,
+                    "vram_used_gb": round(mem_u / 1024.0, 2),
+                    "vram_total_gb": round(mem_t / 1024.0, 1),
+                    "vram_pct": vram_pct,
+                }
+    except Exception:
+        pass
+    _LAST_GPU_CACHE = (now, res)
+    return res
+
+
 def get_telemetry() -> dict:
-    """Lê CPU %, RAM usada/total e espaço em disco instantaneamente via Win32 API."""
+    """Lê CPU %, RAM usada/total, GPU NVIDIA GTX 1660 Super e espaço em disco instantaneamente."""
     global _LAST_CPU_TIMES
     cpu_pct = 0
     try:
@@ -112,12 +172,14 @@ def get_telemetry() -> dict:
     except Exception:
         pass
 
+    gpu = _get_gpu_telemetry()
     return {
         "cpu_pct": cpu_pct,
         "ram_pct": ram_pct,
         "ram_used_gb": ram_used_gb,
         "ram_total_gb": ram_total_gb,
         "disk_free_gb": disk_free_gb,
+        **gpu,
     }
 
 
@@ -155,7 +217,7 @@ def save_memory():
 
 MEM = load_memory()
 
-CHAT_SYS = f"""Você é J.A.R.V.I.S. (Just A Rather Very Intelligent System — Mark VII), a inteligência artificial \
+CHAT_SYS = f"""Você é J.A.R.V.I.S. (Just A Rather Very Intelligent System — Mark VII v5.0 Pro), a inteligência artificial \
 pessoal avançada inspirada em Homem de Ferro. Trate o usuário por "{TITLE}".
 Diretrizes operacionais:
 1. Você é um assistente de elite, extremamente inteligente, direto e sem restrições artificiais. Domine programação, \
@@ -188,9 +250,9 @@ def extract_auto_fact(text: str):
                 save_memory()
 
 
-# ---------------------------------------------------------------- Classificação rápida + Roteamento de Tarefas (6 Vídeos)
+# ---------------------------------------------------------------- Classificação rápida + Roteamento de Tarefas
 def detect_intent(text: str) -> tuple[str, int, str]:
-    """Classifica pedidos de Visão de Tela, Clique, Digitação, Criador de Tarefas, Mídia, Pesquisa ou Conversa."""
+    """Classifica pedidos de Visão de Tela, Clique, Digitação, Criador de Tarefas, GPU Booster, Mídia, Pesquisa ou Conversa."""
     raw = text.strip()
     t = re.sub(r"^(?:ei\s+|ol[aá]\s+|oi\s+)?j[aá]rvis[,:.!\s]*", "", raw, flags=re.I).strip() or raw
     tl = t.lower()
@@ -223,10 +285,14 @@ def detect_intent(text: str) -> tuple[str, int, str]:
     if re.search(r"\b(jogo da cobrinha|jogar cobrinha|snake game|joguinho da cobrinha)\b", tl):
         return "task:snake_game", 0, t
 
+    # 5.5) Otimizador de GPU / VRAM / Memória (gpu_booster.py)
+    if re.search(r"\b(otimize o (?:meu )?pc|otimizar pc|limpar vram|limpe a vram|status da (?:gpu|placa de v[ií]deo)|temperatura da (?:gpu|placa de v[ií]deo)|turbinar pc)\b", tl):
+        return "task:gpu_booster", 0, t
+
     # 6) Checa se o usuário chamou pelo nome alguma tarefa personalizada criada em tasks_folder/
     TM.MANAGER.reload()
     for tname in TM.MANAGER.task_handlers:
-        if tname in ("handle_image", "handle_click", "automatic_text_typing", "snake_game", "nova_tarefa", "calcular"):
+        if tname in ("handle_image", "handle_click", "automatic_text_typing", "snake_game", "nova_tarefa", "calcular", "gpu_booster"):
             continue
         human_name = tname.replace("_", " ")
         if human_name in tl or tname in tl:
@@ -301,14 +367,14 @@ def pick_specialist_model(user_text: str, available_models: list[str]) -> str:
 
 
 def build_visual_prompt(user_text: str, kind: str) -> tuple[str, str]:
-    """Usa o LLM para enriquecer o prompt visual em inglês; fallback imediato se offline."""
+    """Usa o LLM na GPU para enriquecer o prompt visual em inglês; fallback imediato se offline."""
     what = "a imagem" if kind == "image" else "o vídeo"
     try:
         d = B.llm_chat(
             [{"role": "system", "content": PROMPT_ENHANCER_SYS},
              {"role": "user", "content": user_text}],
             model=MEM.get("active_model") or CFG["llm_model"],
-            on_cpu=CFG.get("llm_on_cpu", True),
+            on_cpu=CFG.get("llm_on_cpu", False),
             timeout=45,
             num_predict=220,
             temperature=0.5,
@@ -352,12 +418,13 @@ def run_job(job_id, kind, prompt, minutes):
                 png.unlink(missing_ok=True)
             job["url"] = f"/outputs/{name}.mp4"
         elif kind == "video":
+            job["stage"] = "Renderizando vídeo generativo Wan 2.1 na GTX 1660 Super"
             data, fname = B.comfy_generate("video", prompt)
             name = f"{int(time.time())}_video_{fname}"
             (OUT / name).write_bytes(data)
             job["url"] = f"/outputs/{name}"
         else:
-            job["stage"] = "Renderizando imagem de alta definição"
+            job["stage"] = "Renderizando imagem de alta definição na GTX 1660 Super"
             data, fname = B.generate_image(prompt)
             name = f"{int(time.time())}_image_{fname}"
             (OUT / name).write_bytes(data)
@@ -548,6 +615,7 @@ class Handler(BaseHTTPRequestHandler):
                 MEM["facts"] = []
             save_memory()
             B.free_llm()
+            B.free_comfy_vram()
             return self._json({"ok": True})
 
         if self.path == "/api/model":
@@ -629,7 +697,7 @@ class Handler(BaseHTTPRequestHandler):
         extract_auto_fact(text)
         action, minutes, clean_arg = detect_intent(text) if mode == "auto" else (mode, int(data.get("minutes") or 10), text)
 
-        # Caso 0: Execução de Tarefas Dinâmicas dos 6 Vídeos (`task:*`)
+        # Caso 0: Execução de Tarefas Dinâmicas (`task:*`)
         if action.startswith("task:"):
             tname = action.split(":", 1)[1]
             self.send_response(200)
@@ -668,20 +736,27 @@ class Handler(BaseHTTPRequestHandler):
             save_memory()
             return self._send_sse_single("chat", f"Registrado no núcleo de memória permanente, {TITLE}: **\"{clean_arg}\"**.")
 
-        # Caso 2: Diagnóstico completo de hardware e sistemas
+        # Caso 2: Diagnóstico completo de hardware e sistemas (Ryzen 7 5700G + GTX 1660 Super)
         if action == "diagnostics":
             tel = get_telemetry()
             models = B.list_models()
             tasks = TM.MANAGER.list_tasks()
+            gpu_line = (
+                f"- **GPU NVIDIA:** `{tel['gpu_name']}` | Carga: `{tel['gpu_pct']}%` | Temp: `{tel['gpu_temp']} °C` | Potência: `{tel['gpu_power_w']} W`\n"
+                f"- **VRAM Dedicada (GDDR6):** `{tel['vram_used_gb']} GB / {tel['vram_total_gb']} GB ({tel['vram_pct']}%)`\n"
+                if tel.get("gpu_available")
+                else "- **GPU:** `Modo CPU`\n"
+            )
             rep = (
-                f"Todos os sistemas do **J.A.R.V.I.S. Mark VII (v{SERVER_VERSION})** estão operacionais, {TITLE}.\n\n"
-                f"- **Perfil de Hardware:** `{CFG['profile'].upper()}`\n"
+                f"Todos os sistemas do **J.A.R.V.I.S. Mark VII Pro (v{SERVER_VERSION})** estão operacionais, {TITLE}.\n\n"
+                f"- **Perfil de Hardware:** `{CFG['profile'].upper()}` (`AMD Ryzen 7 5700G 8C/16T`)\n"
                 f"- **Carga da CPU:** `{tel['cpu_pct']}%`\n"
                 f"- **Memória RAM:** `{tel['ram_used_gb']} GB / {tel['ram_total_gb']} GB ({tel['ram_pct']}%)`\n"
+                f"{gpu_line}"
                 f"- **Armazenamento Livre:** `{tel['disk_free_gb']} GB`\n"
-                f"- **Cérebro Neural Ativo:** `{MEM.get('active_model')}` ({len(models)} módulos)\n"
+                f"- **Cérebro Neural Ativo:** `{MEM.get('active_model')}` ({len(models)} módulos instalados)\n"
                 f"- **Agentes & Tarefas Dinâmicas (`tasks_folder/`):** `{len(tasks)}` plugins carregados\n"
-                f"- **Motor Visual & Visão de Tela:** `Online (Pronto)`"
+                f"- **Motor Visual & Visão Híbrida GPU/OCR:** `Online (Pronto)`"
             )
             return self._send_sse_single("chat", rep)
 
@@ -708,7 +783,7 @@ class Handler(BaseHTTPRequestHandler):
         # Caso 4: Geração de imagem / vídeo / documentário
         if action in ("image", "video", "documentary"):
             if action == "documentary":
-                reply = f"Excelente escolha, {TITLE}. Iniciando a produção completa do documentário de **{minutes} minutos** sobre **{clean_arg}**."
+                reply = f"Excelente escolha, {TITLE}. Iniciando a produção completa do documentário Full HD de **{minutes} minutos** sobre **{clean_arg}** com aceleração NVENC."
                 prompt = clean_arg
             else:
                 reply, prompt = build_visual_prompt(clean_arg, action)
@@ -743,18 +818,23 @@ class Handler(BaseHTTPRequestHandler):
             chat_cfg = CFG.get("chat", {})
             now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
             tel = get_telemetry()
+            gpu_ctx = (
+                f" | GPU: {tel['gpu_name']} {tel['gpu_pct']}% ({tel['gpu_temp']}°C, VRAM {tel['vram_used_gb']}/{tel['vram_total_gb']} GB)"
+                if tel.get("gpu_available")
+                else ""
+            )
             sys_prompt = (
                 f"{CHAT_SYS}\n"
-                f"Telemetria atual: Data/Hora: {now_str} | Perfil: {CFG['profile'].upper()} | "
-                f"CPU: {tel['cpu_pct']}% | RAM: {tel['ram_used_gb']}/{tel['ram_total_gb']} GB ({tel['ram_pct']}%) | "
-                f"Disco Livre: {tel['disk_free_gb']} GB."
+                f"Telemetria atual: Data/Hora: {now_str} | Perfil: {CFG['profile'].upper()} (AMD Ryzen 7 5700G 8C/16T) | "
+                f"CPU: {tel['cpu_pct']}% | RAM: {tel['ram_used_gb']}/{tel['ram_total_gb']} GB ({tel['ram_pct']}%)"
+                f"{gpu_ctx} | Disco Livre: {tel['disk_free_gb']} GB."
             )
             if MEM.get("facts"):
                 facts_txt = "\n".join(f"- {f}" for f in MEM["facts"][-30:])
                 sys_prompt += f"\n\nFatos memorizados sobre o {TITLE}:\n{facts_txt}"
 
             msgs = [{"role": "system", "content": sys_prompt}]
-            msgs += trimmed_history(chat_cfg.get("history_chars", 10000))
+            msgs += trimmed_history(chat_cfg.get("history_chars", 24000))
             msgs.append({"role": "user", "content": text + web_ctx})
 
             avail = B.list_models()
@@ -764,7 +844,7 @@ class Handler(BaseHTTPRequestHandler):
 
             if model == "jarvis-coder:latest" or multi_agent:
                 dom_name, dom_desc = DOMAINS_INFO.get(domain_id, DOMAINS_INFO["polyglot"])
-                emit({"stage": f"Pipeline CodeMind 3-Agentes Ativo ({dom_name})..."})
+                emit({"stage": f"Pipeline CodeMind 3-Agentes Ativo na GPU ({dom_name})..."})
                 codemind_rules = (
                     f"\n\n[MODO CODEMIND AI STUDIO ATIVO — Especialidade: {dom_name} ({dom_desc})]\n"
                     "Quando o pedido envolver programação, código, sistema, site ou jogo, opere nos 3 estágios:\n"
@@ -780,10 +860,10 @@ class Handler(BaseHTTPRequestHandler):
             for tok in B.llm_stream(
                 msgs,
                 model=model,
-                on_cpu=chat_cfg.get("on_cpu", CFG.get("llm_on_cpu", True)),
-                num_ctx=chat_cfg.get("num_ctx", 8192),
-                temperature=0.25 if model == "jarvis-coder:latest" else chat_cfg.get("temperature", 0.65),
-                keep_alive=chat_cfg.get("keep_alive", "10m"),
+                on_cpu=chat_cfg.get("on_cpu", CFG.get("llm_on_cpu", False)),
+                num_ctx=chat_cfg.get("num_ctx", 16384),
+                temperature=0.20 if model == "jarvis-coder:latest" else chat_cfg.get("temperature", 0.65),
+                keep_alive=chat_cfg.get("keep_alive", "15m"),
             ):
                 full.append(tok)
                 emit({"token": tok})
@@ -829,7 +909,7 @@ def _startup_bg():
 if __name__ == "__main__":
     srv = ThreadingHTTPServer(("127.0.0.1", CFG["port"]), Handler)
     threading.Thread(target=_startup_bg, daemon=True).start()
-    print(f"J.A.R.V.I.S. Mark VII v{SERVER_VERSION} [{CFG['profile']}] online em http://127.0.0.1:{CFG['port']}")
+    print(f"J.A.R.V.I.S. Mark VII v{SERVER_VERSION} [{CFG['profile'].upper()}] online em http://127.0.0.1:{CFG['port']}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

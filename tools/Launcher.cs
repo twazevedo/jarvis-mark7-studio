@@ -10,8 +10,14 @@ class JarvisLauncher {
     static string ResolveRoot() {
         string here = AppDomain.CurrentDomain.BaseDirectory;
         if (File.Exists(Path.Combine(here, "server.py"))) return here;
-        string fallback = @"C:\Users\Thiago\.gemini\antigravity\scratch\jarvis";
-        if (File.Exists(Path.Combine(fallback, "server.py"))) return fallback;
+        string[] fallbacks = new string[] {
+            @"C:\Users\Thiag\.gemini\antigravity\scratch\jarvis-mark7-studio",
+            @"C:\Users\Thiago\.gemini\antigravity\scratch\jarvis-mark7-studio",
+            @"C:\Users\Thiago\.gemini\antigravity\scratch\jarvis"
+        };
+        foreach (var fb in fallbacks) {
+            if (File.Exists(Path.Combine(fb, "server.py"))) return fb;
+        }
         return here;
     }
     static string Root = ResolveRoot();
@@ -38,9 +44,9 @@ class JarvisLauncher {
 
         if (needsSetup) {
             var ans = MessageBox.Show(
-                "J.A.R.V.I.S. detectou que os componentes do perfil [" + profile.ToUpper() + "] ainda não foram instalados neste PC.\n\n" +
-                "Deseja instalar e baixar todos os modelos automaticamente agora?",
-                "J.A.R.V.I.S. — Instalação Inicial (" + profile.ToUpper() + ")",
+                "J.A.R.V.I.S. v5.0 detectou que os componentes do perfil [" + profile.ToUpper() + "] ainda não foram instalados neste PC.\n\n" +
+                "Deseja instalar e baixar automaticamente todos os modelos otimizados para seu hardware agora?",
+                "J.A.R.V.I.S. Mark VII v5.0 — Instalação Inicial (" + profile.ToUpper() + ")",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Information);
             if (ans != DialogResult.Yes) return 0;
 
@@ -56,14 +62,14 @@ class JarvisLauncher {
         // 1) Garante que o Ollama esteja rodando
         EnsureOllama();
 
-        // 2) Se for PRO, garante que o ComfyUI esteja rodando
+        // 2) Se for PRO, garante que o ComfyUI esteja rodando com --lowvram --fp32-vae (GTX 1660 Super)
         if (profile == "pro") {
             EnsureComfyUI();
         }
 
-        // 3) Garante que o servidor do Jarvis v4.5 esteja rodando na porta 8766
+        // 3) Garante que o servidor do Jarvis v5.0 esteja rodando na porta 8766
         string statusJson = HttpGet("http://127.0.0.1:8766/api/status", 800);
-        if (statusJson != null && !statusJson.Contains("\"4.5\"")) {
+        if (statusJson != null && !statusJson.Contains("\"5.0\"")) {
             HttpPost("http://127.0.0.1:8766/api/shutdown", 600);
             Thread.Sleep(500);
             statusJson = null;
@@ -81,7 +87,7 @@ class JarvisLauncher {
             psi.EnvironmentVariables["JARVIS_PROFILE"] = profile;
             Process.Start(psi);
 
-            for (int i = 0; i < 25; i++) {
+            for (int i = 0; i < 30; i++) {
                 if (HttpGet("http://127.0.0.1:8766/api/status", 500) != null) break;
                 Thread.Sleep(300);
             }
@@ -111,12 +117,15 @@ class JarvisLauncher {
             "Programs", "Ollama", "ollama.exe");
         string exe = File.Exists(localOllama) ? localOllama : "ollama";
         try {
-            Process.Start(new ProcessStartInfo {
+            var psi = new ProcessStartInfo {
                 FileName = exe,
                 Arguments = "serve",
                 CreateNoWindow = true,
                 UseShellExecute = false
-            });
+            };
+            psi.EnvironmentVariables["OLLAMA_FLASH_ATTENTION"] = "1";
+            psi.EnvironmentVariables["OLLAMA_MAX_LOADED_MODELS"] = "1";
+            Process.Start(psi);
         } catch { }
     }
 
@@ -128,7 +137,7 @@ class JarvisLauncher {
         try {
             Process.Start(new ProcessStartInfo {
                 FileName = comfyPy,
-                Arguments = "main.py --lowvram --listen 127.0.0.1 --port 8188",
+                Arguments = "main.py --lowvram --fp32-vae --listen 127.0.0.1 --port 8188",
                 WorkingDirectory = comfyDir,
                 WindowStyle = ProcessWindowStyle.Minimized,
                 UseShellExecute = true
@@ -171,7 +180,7 @@ class JarvisLauncher {
             if (File.Exists(b)) {
                 Process.Start(new ProcessStartInfo {
                     FileName = b,
-                    Arguments = "--app=" + url + " --window-size=1380,850 --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream",
+                    Arguments = "--app=" + url + " --window-size=1420,880 --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream",
                     UseShellExecute = true
                 });
                 return;

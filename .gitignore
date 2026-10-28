@@ -12,6 +12,7 @@ models/lora/*.safetensors
 voices/*.onnx
 tools/ffmpeg/
 tools/sd/
+tools/uv/
 tools/*.zip
 
 # Mídias geradas e estado local

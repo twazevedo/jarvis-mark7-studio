@@ -44,14 +44,14 @@ def execute(content: str = "") -> str:
             {"role": "user", "content": f"Crie uma tarefa em Python para: {spec}"},
         ],
         model="jarvis-coder:latest",
-        on_cpu=True,
-        timeout=90,
-        num_predict=900,
-        temperature=0.25,
+        on_cpu=B.CFG.get("llm_on_cpu", False),
+        timeout=120,
+        num_predict=1100,
+        temperature=0.20,
     )
 
     name = _slug_py(out.get("name") or spec[:25])
-    if name in ("task_manager", "nova_tarefa", "handle_click", "handle_image", "automatic_text_typing", "snake_game"):
+    if name in ("task_manager", "nova_tarefa", "handle_click", "handle_image", "automatic_text_typing", "snake_game", "gpu_booster"):
         name = f"{name}_custom"
 
     code = (out.get("code") or "").strip()
@@ -85,7 +85,7 @@ def execute(content: str = "") -> str:
         preview_res = f"\n\n*(Módulo salvo; aviso no teste automático: {e})*"
 
     return (
-        f"⚡ **Nova Tarefa Criada em Tempo Real!**\n"
+        f"⚡ **Nova Tarefa Criada em Tempo Real (GPU CodeMind)!**\n"
         f"- **Módulo:** `tasks_folder/{name}.py`\n"
         f"- **Descrição:** {out.get('description') or spec}"
         f"{preview_res}"

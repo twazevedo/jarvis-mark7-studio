@@ -1,14 +1,14 @@
-"""Modo documentário: tema -> roteiro (LLM) -> imagens + narração -> vídeo longo (ffmpeg).
+"""Modo documentário Full HD: tema -> roteiro (LLM GPU) -> imagens + narração -> vídeo longo (FFmpeg NVENC / Ryzen 16T).
 
 O trabalho é retomável: tudo fica em projects/<tema>-<min>m/. Se o PC desligar ou você
 cancelar, repetir o mesmo pedido continua de onde parou.
 """
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import math
 import re
 import shutil
 import subprocess
-import sys
 import time
 import unicodedata
 import wave
@@ -20,6 +20,7 @@ import voice
 LV = B.CFG["long_video"]
 PROJECTS = B.ROOT / "projects"
 OUT = B.ROOT / "outputs"
+_NVENC_AVAILABLE = None
 
 
 def slug(s):
@@ -38,10 +39,37 @@ def need_tools():
         raise RuntimeError("Voz do narrador não encontrada. Rode o setup.ps1 novamente.")
 
 
+def has_nvenc() -> bool:
+    """Detecta se o codificador de hardware NVIDIA NVENC (GTX 1660 Super) está disponível e operacional."""
+    global _NVENC_AVAILABLE
+    if _NVENC_AVAILABLE is not None:
+        return _NVENC_AVAILABLE
+    if not LV.get("use_nvenc", False):
+        _NVENC_AVAILABLE = False
+        return False
+    try:
+        p = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=256x256:d=0.1",
+             "-c:v", "h264_nvenc", "-f", "null", "-"],
+            capture_output=True,
+            timeout=8,
+        )
+        _NVENC_AVAILABLE = (p.returncode == 0)
+    except Exception:
+        _NVENC_AVAILABLE = False
+    return _NVENC_AVAILABLE
+
+
 # ------------------------------------------------------------------ roteiro
 def _llm(messages, num_predict=1800):
-    return B.llm_chat(messages, model=LV["script_model"], on_cpu=not LV["script_on_gpu"],
-                      timeout=900, num_predict=num_predict, temperature=0.75)
+    return B.llm_chat(
+        messages,
+        model=LV["script_model"],
+        on_cpu=not LV.get("script_on_gpu", True),
+        timeout=900,
+        num_predict=num_predict,
+        temperature=0.75,
+    )
 
 
 def make_plan(job, topic, minutes, pdir):
@@ -49,7 +77,7 @@ def make_plan(job, topic, minutes, pdir):
     if plan_file.exists():
         plan = json.loads(plan_file.read_text(encoding="utf-8-sig"))
     else:
-        job.update(stage="Estruturando o roteiro", done=0, total=1)
+        job.update(stage="Estruturando o roteiro cinematográfico (GPU)", done=0, total=1)
         n_chap = max(2, min(minutes, 20))
         total = max(3, round(minutes * LV["scenes_per_minute"]))
         sys_msg = {"role": "system", "content": "Você é um roteirista de documentários em português do Brasil."}
@@ -68,8 +96,14 @@ def make_plan(job, topic, minutes, pdir):
                 break
         if not chapters:
             chapters = [f"{topic} — parte {i + 1}" for i in range(n_chap)]
-        plan = {"title": title, "topic": topic, "minutes": minutes, "chapter_titles": chapters,
-                "per": math.ceil(total / len(chapters)), "chapters": []}
+        plan = {
+            "title": title,
+            "topic": topic,
+            "minutes": minutes,
+            "chapter_titles": chapters,
+            "per": math.ceil(total / len(chapters)),
+            "chapters": [],
+        }
         plan_file.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
 
     titles = plan["chapter_titles"]
@@ -84,15 +118,17 @@ def make_plan(job, topic, minutes, pdir):
             need = plan["per"] - len(scenes)
             if need <= 0:
                 break
-            ask = (f"Documentário: \"{plan['title']}\" (tema: {topic}).\nEstrutura: {outline}\n"
-                   f"Agora escreva o capítulo {ci + 1}: \"{titles[ci]}\".\n"
-                   + (f"Narração da cena anterior (continue a partir dela, sem repetir): \"{prev}\"\n" if prev else "")
-                   + f"Escreva {need} cenas consecutivas. Cada cena tem: "
-                   f"\"narracao\" — texto falado em português do Brasil, fluido e informativo, com cerca de {words} palavras, "
-                   f"sem listas, sem marcações e sem citar 'cena' ou 'capítulo'; "
-                   f"\"visual\" — descrição da imagem em INGLÊS (sujeito, ambiente, luz, ângulo de câmera), "
-                   f"sem texto escrito e sem pessoas famosas reais.\n"
-                   f'Responda só JSON: {{"cenas": [{{"narracao": "...", "visual": "..."}}]}}')
+            ask = (
+                f"Documentário: \"{plan['title']}\" (tema: {topic}).\nEstrutura: {outline}\n"
+                f"Agora escreva o capítulo {ci + 1}: \"{titles[ci]}\".\n"
+                + (f"Narração da cena anterior (continue a partir dela, sem repetir): \"{prev}\"\n" if prev else "")
+                + f"Escreva {need} cenas consecutivas. Cada cena tem: "
+                f"\"narracao\" — texto falado em português do Brasil, fluido e informativo, com cerca de {words} palavras, "
+                f"sem listas, sem marcações e sem citar 'cena' ou 'capítulo'; "
+                f"\"visual\" — descrição da imagem em INGLÊS (sujeito, ambiente, luz, ângulo de câmera), "
+                f"sem texto escrito e sem pessoas famosas reais.\n"
+                f'Responda só JSON: {{"cenas": [{{"narracao": "...", "visual": "..."}}]}}'
+            )
             try:
                 data = _llm([sys_msg_scene(), {"role": "user", "content": ask}])
             except Exception as e:  # noqa: BLE001
@@ -108,16 +144,21 @@ def make_plan(job, topic, minutes, pdir):
                     prev = n
         scenes = scenes[:plan["per"]]
         if not scenes:
-            raise RuntimeError(f"O modelo '{LV['script_model']}' não conseguiu escrever o capítulo {ci + 1}. "
-                               f"Ele está instalado? (ollama pull {LV['script_model']})")
+            raise RuntimeError(
+                f"O modelo '{LV['script_model']}' não conseguiu escrever o capítulo {ci + 1}. "
+                f"Ele está instalado? (ollama pull {LV['script_model']})"
+            )
         plan["chapters"].append(scenes)
         plan_file.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
     return plan
 
 
 def sys_msg_scene():
-    return {"role": "system", "content": "Você é um roteirista de documentários em português do Brasil. "
-            "Escreve narração envolvente, correta e clara. Responde sempre em JSON válido."}
+    return {
+        "role": "system",
+        "content": "Você é um roteirista de documentários em português do Brasil. "
+                   "Escreve narração envolvente, correta e clara. Responde sempre em JSON válido.",
+    }
 
 
 # ------------------------------------------------------------------ mídia
@@ -139,35 +180,50 @@ def _motion_vf(idx, n, dur, W, H, fps):
         f"z='1.15':x='(iw-iw/zoom)*(1-on/{n})':y='(ih-ih/zoom)/2'",
         f"z='1.15':x='(iw-iw/zoom)*on/{n}':y='(ih-ih/zoom)/2'",
     ][idx % 4]
-    return (f"scale={W * 2}:{H * 2}:flags=lanczos:force_original_aspect_ratio=increase,crop={W * 2}:{H * 2},"
-            f"zoompan={zoompan}:d={n}:s={W}x{H}:fps={fps},"
-            f"fade=t=in:d=0.4,fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p")
+    return (
+        f"scale={W * 2}:{H * 2}:flags=lanczos:force_original_aspect_ratio=increase,crop={W * 2}:{H * 2},"
+        f"zoompan={zoompan}:d={n}:s={W}x{H}:fps={fps},"
+        f"fade=t=in:d=0.4,fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p"
+    )
+
+
+def _vcodec_args() -> list[str]:
+    if has_nvenc():
+        return ["-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr", "-cq", "20"]
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "21"]
 
 
 def render_clip(png: Path, wav: Path, out: Path, idx: int):
     W, H, fps = LV["video_width"], LV["video_height"], LV["fps"]
     dur = wav_len(wav) + 0.7
     n = max(1, round(dur * fps))
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(png), "-i", str(wav),
-           "-vf", _motion_vf(idx, n, dur, W, H, fps),
-           "-af", "apad=pad_dur=0.7,aresample=44100", "-t", f"{dur:.2f}",
-           "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-r", str(fps),
-           "-c:a", "aac", "-b:a", "160k", "-ac", "2", str(out)]
-    p = subprocess.run(cmd, capture_output=True)
+    base_cmd = [
+        "ffmpeg", "-y", "-loglevel", "error", "-i", str(png), "-i", str(wav),
+        "-vf", _motion_vf(idx, n, dur, W, H, fps),
+        "-af", "apad=pad_dur=0.7,aresample=44100", "-t", f"{dur:.2f}",
+    ]
+    tail_cmd = ["-r", str(fps), "-c:a", "aac", "-b:a", "192k", "-ac", "2", str(out)]
+    p = subprocess.run(base_cmd + _vcodec_args() + tail_cmd, capture_output=True)
+    if p.returncode != 0 and has_nvenc():
+        # Fallback imediato para CPU se todas as sessões NVENC estiverem ocupadas
+        p = subprocess.run(base_cmd + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "21"] + tail_cmd, capture_output=True)
     if p.returncode != 0:
         raise RuntimeError("ffmpeg falhou: " + p.stderr.decode(errors="replace")[-400:])
     return dur
 
 
 def animate_still(png: Path, out: Path, seconds=6, idx=0):
-    """Vídeo curto sem áudio a partir de uma imagem (movimento de câmera). Usado no perfil lite."""
+    """Vídeo curto sem áudio a partir de uma imagem (movimento de câmera)."""
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg não encontrado. Rode o setup.ps1 (ou 'winget install Gyan.FFmpeg') e reabra o terminal.")
     W, H, fps = LV["video_width"], LV["video_height"], LV["fps"]
     n = max(1, round(seconds * fps))
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(png), "-vf", _motion_vf(idx, n, seconds, W, H, fps),
-           "-t", str(seconds), "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-r", str(fps),
-           "-an", "-movflags", "+faststart", str(out)]
+    cmd = [
+        "ffmpeg", "-y", "-loglevel", "error", "-i", str(png),
+        "-vf", _motion_vf(idx, n, seconds, W, H, fps),
+        "-t", str(seconds), *_vcodec_args(), "-r", str(fps),
+        "-an", "-movflags", "+faststart", str(out),
+    ]
     p = subprocess.run(cmd, capture_output=True)
     if p.returncode != 0:
         raise RuntimeError("ffmpeg falhou: " + p.stderr.decode(errors="replace")[-400:])
@@ -194,28 +250,43 @@ def build(job, topic, minutes):
     img_cfg = {**B.CFG["image"], **LV["image"]}
     style = LV["style"]
 
-    durations = []
     for i, sc in enumerate(scenes):
         job.update(stage=f"Narrando e ilustrando — cena {i + 1}/{n}", done=i, total=n)
-        wav, png, clip = (pdir / "scenes" / f"{i:03d}.{e}" for e in ("wav", "png", "mp4"))
+        wav, png, _ = (pdir / "scenes" / f"{i:03d}.{e}" for e in ("wav", "png", "mp4"))
         if not wav.exists():
             tts(sc["narration"], wav, voice_mode=job.get("voice_mode", "jarvis_br"))
         if not png.exists():
-            data, _ = B.generate_image(f"{sc['visual']}, {style}", cfg=img_cfg)
+            data, _ = B.generate_image(f"{sc['visual']}, {style}", cfg=img_cfg, keep_vram=(i < n - 1))
             png.write_bytes(data)
-    for i, sc in enumerate(scenes):
-        job.update(stage=f"Montando cenas — {i + 1}/{n}", done=i, total=n)
-        wav, png, clip = (pdir / "scenes" / f"{i:03d}.{e}" for e in ("wav", "png", "mp4"))
-        if not clip.exists():
-            render_clip(png, wav, clip, i)
-        durations.append(wav_len(wav) + 0.7)
+    B.free_comfy_vram()
 
-    job.update(stage="Unindo o vídeo final", done=n, total=n)
+    # Montagem paralela dos clipes usando NVENC + múltiplos núcleos do Ryzen 7 5700G
+    workers = max(1, int(LV.get("render_workers", 2 if has_nvenc() else 3)))
+    done_clips = 0
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futs = {}
+        for i in range(n):
+            wav, png, clip = (pdir / "scenes" / f"{i:03d}.{e}" for e in ("wav", "png", "mp4"))
+            if not clip.exists():
+                futs[pool.submit(render_clip, png, wav, clip, i)] = i
+            else:
+                done_clips += 1
+        job.update(stage=f"Renderizando cenas Full HD ({'NVENC GPU' if has_nvenc() else 'CPU'}) — {done_clips}/{n}", done=done_clips, total=n)
+        for fut in as_completed(futs):
+            fut.result()
+            done_clips += 1
+            job.update(stage=f"Renderizando cenas Full HD ({'NVENC GPU' if has_nvenc() else 'CPU'}) — {done_clips}/{n}", done=done_clips, total=n)
+
+    durations = [wav_len(pdir / "scenes" / f"{i:03d}.wav") + 0.7 for i in range(n)]
+
+    job.update(stage="Unindo o vídeo final Full HD", done=n, total=n)
     lst = pdir / "list.txt"
     lst.write_text("".join(f"file '{(pdir / 'scenes' / f'{i:03d}.mp4').as_posix()}'\n" for i in range(n)), encoding="utf-8")
     joined = pdir / "joined.mp4"
-    p = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
-                        "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", str(joined)], capture_output=True)
+    p = subprocess.run([
+        "ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", str(joined),
+    ], capture_output=True)
     if p.returncode != 0:
         raise RuntimeError("ffmpeg (união) falhou: " + p.stderr.decode(errors="replace")[-400:])
 
@@ -224,10 +295,11 @@ def build(job, topic, minutes):
     if LV.get("music") and music.is_file():
         job.update(stage="Mixando a trilha sonora")
         mixed = pdir / "mixed.mp4"
-        p = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-stream_loop", "-1", "-i", str(music),
-                            "-filter_complex", "[1:a]volume=0.10[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]",
-                            "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", str(mixed)],
-                           capture_output=True)
+        p = subprocess.run([
+            "ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-stream_loop", "-1", "-i", str(music),
+            "-filter_complex", "[1:a]volume=0.10[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]",
+            "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", str(mixed),
+        ], capture_output=True)
         if p.returncode == 0:
             final = mixed
 

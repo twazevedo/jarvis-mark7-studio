@@ -774,11 +774,11 @@
     <div class="brand-logo">MK7</div>
     <div>
       <h1>J.A.R.V.I.S.</h1>
-      <span class="brand-sub">STARK INDUSTRIES • SISTEMA HOLOGRÁFICO INTEGRADO v3.0</span>
+      <span class="brand-sub">STARK INDUSTRIES • SISTEMA HOLOGRÁFICO v5.0 PRO • RYZEN 7 5700G + GTX 1660S</span>
     </div>
   </div>
   <div class="top-controls">
-    <span id="prof" class="badge-pill gold">PERFIL LITE</span>
+    <span id="prof" class="badge-pill gold">PERFIL PRO</span>
     <span class="badge-pill"><i id="dComfy" class="dot"></i>MOTOR VISUAL</span>
     <span class="badge-pill"><i id="dLlm" class="dot"></i>CÉREBRO IA</span>
     <label>MÓDULO NEURAL:
@@ -850,12 +850,20 @@
 
   <div class="telemetry-grid">
     <div class="tel-card">
-      <div class="tel-top"><span>CPU CORE</span><b id="cpuVal">0%</b></div>
+      <div class="tel-top"><span>CPU RYZEN 7</span><b id="cpuVal">0%</b></div>
       <div class="tel-bar"><i id="cpuBar"></i></div>
     </div>
     <div class="tel-card">
       <div class="tel-top"><span>RAM NEURAL</span><b id="ramVal">0 GB</b></div>
       <div class="tel-bar"><i id="ramBar"></i></div>
+    </div>
+    <div class="tel-card" id="gpuCard">
+      <div class="tel-top"><span id="gpuNameLbl">GPU GTX 1660S</span><b id="gpuVal">0% • 0°C</b></div>
+      <div class="tel-bar"><i id="gpuBar"></i></div>
+    </div>
+    <div class="tel-card" id="vramCard">
+      <div class="tel-top"><span>VRAM 6GB GDDR6</span><b id="vramVal">0.0/6.0G</b></div>
+      <div class="tel-bar"><i id="vramBar"></i></div>
     </div>
   </div>
 
@@ -887,8 +895,9 @@
     <div class="chip" onclick="quickPrompt('type')">⌨️ Digitar Automático</div>
     <div class="chip" onclick="showDynamicTasks()">🧩 Plugins (tasks_folder)</div>
     <div class="chip" onclick="send('Jarvis, faça um diagnóstico do sistema')">⚡ Diagnóstico Stark</div>
+    <div class="chip" onclick="send('Jarvis, otimize o meu PC e limpe a VRAM')">🚀 Otimizar GPU/VRAM</div>
     <div class="chip" onclick="quickPrompt('image')">🖼 Criar Arte Cinema</div>
-    <div class="chip" onclick="quickPrompt('doc')">📽 Documentário 15 min</div>
+    <div class="chip" onclick="quickPrompt('doc')">📽 Documentário Full HD</div>
   </div>
 
   <div id="log"></div>
@@ -1859,10 +1868,14 @@ $("#txt").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDe
 
 /* ---------- Status & Telemetria ---------- */
 const MODEL_LABELS = {
-  "jarvis-mark7:latest": "⚡ JARVIS MARK VII (Inteligência Geral)",
-  "jarvis-coder:latest": "💻 JARVIS CODER (Engenharia Sênior)",
-  "jarvis-cinema:latest": "🎬 JARVIS CINEMA (Roteiros & Direção)",
-  "qwen2.5:3b": "🧠 Qwen 2.5 (3B Base)"
+  "jarvis-mark7:latest": "⚡ JARVIS MARK VII PRO (7B GPU Geral)",
+  "jarvis-coder:latest": "💻 JARVIS CODER PRO (Qwen 2.5 Coder 7B GPU)",
+  "jarvis-cinema:latest": "🎬 JARVIS CINEMA PRO (Diretor 7B GPU)",
+  "dolphin3:8b": "🐬 Dolphin 3.0 (8B Uncensored GPU)",
+  "qwen2.5-coder:7b": "💻 Qwen 2.5 Coder (7B Base GPU)",
+  "qwen2.5:7b": "🧠 Qwen 2.5 (7B Base GPU)",
+  "moondream:latest": "👁️ Moondream Vision (GPU Multimodal)",
+  "qwen2.5:3b": "🧠 Qwen 2.5 (3B Fast)"
 };
 
 async function status() {
@@ -1880,6 +1893,12 @@ async function status() {
       $("#cpuBar").style.width = `${s.telemetry.cpu_pct}%`;
       $("#ramVal").textContent = `${s.telemetry.ram_used_gb}/${s.telemetry.ram_total_gb}G`;
       $("#ramBar").style.width = `${s.telemetry.ram_pct}%`;
+      if (s.telemetry.gpu_available) {
+        $("#gpuVal").textContent = `${s.telemetry.gpu_pct}% • ${s.telemetry.gpu_temp}°C`;
+        $("#gpuBar").style.width = `${s.telemetry.gpu_pct}%`;
+        $("#vramVal").textContent = `${s.telemetry.vram_used_gb}/${s.telemetry.vram_total_gb}G`;
+        $("#vramBar").style.width = `${s.telemetry.vram_pct}%`;
+      }
     }
 
     const sel = $("#modelSel");
@@ -1897,12 +1916,12 @@ async function status() {
 
 (async () => {
   await status();
-  setInterval(status, 3500);
+  setInterval(status, 3000);
   loadGallery();
   try {
     const h = await (await fetch("/api/history")).json();
     if (h.history && h.history.length) h.history.forEach(m => addMsg(m.role === "user" ? "user" : "jarvis", m.content));
-    else addMsg("jarvis", "Sistemas holográficos **Mark VII (v3.0)** operacionais, senhor. Conto agora com **3 módulos especialistas** (`JARVIS-MARK7`, `JARVIS-CODER` e `JARVIS-CINEMA`) e pesquisa **Smart RAG (Wikipédia + Web)** automática. Bata duas palmas 👏👏 ou diga **\"Jarvis\"** a qualquer momento.");
+    else addMsg("jarvis", "Sistemas holográficos **Mark VII Pro (v5.0)** operacionais em **AMD Ryzen 7 5700G (16T) + NVIDIA GTX 1660 SUPER (6 GB VRAM)**, senhor. Conto com **3 especialistas 7B na GPU** (`JARVIS-MARK7`, `JARVIS-CODER` e `JARVIS-CINEMA`), **Visão Multimodal Híbrida (GPU + OCR)**, **Renderizador Full HD NVENC** e **Smart RAG (Wikipédia + Web)**. Bata duas palmas 👏👏 ou diga **\"Jarvis\"** a qualquer momento.");
   } catch (e) {}
   fetch("/api/jobs").then(r => r.json()).then(js => js.forEach(j => track(j.id, j.kind, j.prompt))).catch(()=>{});
   startAcousticEngine();
