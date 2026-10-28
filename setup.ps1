@@ -1,0 +1,99 @@
+# Instala tudo que o J.A.R.V.I.S. precisa e gera os executaveis .exe (rode UMA vez em cada PC).
+#   powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Profile pro    # PC Ryzen 7 5700G + GTX 1660 Super
+#   powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Profile lite   # Notebook i5 (somente CPU)
+param([ValidateSet("pro", "lite")][string]$Profile = $(if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) { "pro" } else { "lite" }))
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
+Write-Host "== Configurando J.A.R.V.I.S. [Perfil: $($Profile.ToUpper())] ==" -ForegroundColor Cyan
+
+function Get-Model($url, $dest) {
+    if (Test-Path $dest) { Write-Host "[ok] $(Split-Path $dest -Leaf) ja existe"; return }
+    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+    Write-Host "[baixando] $(Split-Path $dest -Leaf)"
+    & curl.exe -L --fail --retry 5 -C - -o $dest $url
+    if ($LASTEXITCODE -ne 0) { throw "Falha ao baixar $url" }
+}
+
+function New-Venv($path) {
+    if (Test-Path "$path\Scripts\python.exe") { return }
+    if (Get-Command uv -ErrorAction SilentlyContinue) { uv venv $path --python 3.12 --seed; if ($LASTEXITCODE -eq 0) { return } }
+    if (Get-Command py -ErrorAction SilentlyContinue) { py -3.12 -m venv $path; if ($LASTEXITCODE -eq 0) { return } }
+    python -m venv $path
+}
+
+# 1) Ambiente Python do Jarvis + Narrador Neural Offline (Piper + Voz Original Paul Bettany + Edge-TTS)
+New-Venv ".\.venv"
+$jpy = ".\.venv\Scripts\python.exe"
+& $jpy -m pip install --upgrade pip piper-tts edge-tts mss pyautogui pillow pygame pyperclip
+$pv = "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium"
+Get-Model "$pv/pt_BR-faber-medium.onnx" ".\voices\pt_BR-faber-medium.onnx"
+Get-Model "$pv/pt_BR-faber-medium.onnx.json" ".\voices\pt_BR-faber-medium.onnx.json"
+$jv = "https://huggingface.co/jgkawell/jarvis/resolve/main/en/en_GB/jarvis/high"
+Get-Model "$jv/jarvis-high.onnx" ".\voices\jarvis-high.onnx"
+Get-Model "$jv/jarvis-high.onnx.json" ".\voices\jarvis-high.onnx.json"
+New-Item -ItemType Directory -Force -Path .\assets | Out-Null
+
+# 2) FFmpeg embutido (portatil em tools\ffmpeg\bin)
+if (-not (Test-Path ".\tools\ffmpeg\bin\ffmpeg.exe") -and -not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+    Get-Model "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" ".\tools\ffmpeg.zip"
+    Expand-Archive .\tools\ffmpeg.zip .\tools\ff_tmp -Force
+    New-Item -ItemType Directory -Force -Path .\tools\ffmpeg\bin | Out-Null
+    Get-ChildItem .\tools\ff_tmp -Recurse -Filter "*.exe" | Copy-Item -Destination .\tools\ffmpeg\bin -Force
+    Remove-Item .\tools\ff_tmp -Recurse -Force
+    Remove-Item .\tools\ffmpeg.zip -Force
+}
+
+# 3) Motores de Imagem e Video conforme o perfil
+if ($Profile -eq "pro") {
+    if (-not (Test-Path ".\ComfyUI")) { git clone https://github.com/comfyanonymous/ComfyUI.git }
+    New-Venv ".\ComfyUI\venv"
+    $cpy = ".\ComfyUI\venv\Scripts\python.exe"
+    & $cpy -m pip install --upgrade pip
+    & $cpy -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+    & $cpy -m pip install -r .\ComfyUI\requirements.txt
+    $m = ".\ComfyUI\models"
+    $hf = "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files"
+    Get-Model "https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors" "$m\checkpoints\DreamShaper_8_pruned.safetensors"
+    Get-Model "$hf/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors" "$m\diffusion_models\wan2.1_t2v_1.3B_fp16.safetensors"
+    Get-Model "$hf/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" "$m\text_encoders\umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+    Get-Model "$hf/vae/wan_2.1_vae.safetensors" "$m\vae\wan_2.1_vae.safetensors"
+    $llms = @("qwen2.5:3b", "qwen2.5:7b", "dolphin3:8b")
+}
+else {
+    if (-not (Test-Path ".\tools\sd\sd-cli.exe")) {
+        New-Item -ItemType Directory -Force -Path .\tools\sd | Out-Null
+        Get-Model "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1015-e41fbcf/sd-master-e41fbcf-bin-win-cpu-x64.zip" ".\tools\sd.zip"
+        Expand-Archive .\tools\sd.zip .\tools\sd -Force
+        Remove-Item .\tools\sd.zip
+    }
+    Get-Model "https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors" ".\models\DreamShaper_8_pruned.safetensors"
+    Get-Model "https://huggingface.co/latent-consistency/lcm-lora-sdv1-5/resolve/main/pytorch_lora_weights.safetensors" ".\models\lora\lcm-lora-sdv1-5.safetensors"
+    $llms = @("qwen2.5:3b")
+}
+
+# 4) Ollama (cerebro de linguagem local)
+$ol = if (Get-Command ollama -ErrorAction SilentlyContinue) { (Get-Command ollama).Source } elseif (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe") { "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe" } else { "" }
+if (-not $ol) {
+    winget install -e --id Ollama.Ollama --accept-source-agreements --accept-package-agreements --silent
+    $ol = "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe"
+}
+if (Test-Path $ol) {
+    if (-not (Get-Process ollama -ErrorAction SilentlyContinue)) {
+        Start-Process $ol -ArgumentList "serve" -WindowStyle Hidden
+        Start-Sleep 3
+    }
+    foreach ($l in $llms) { & $ol pull $l }
+    if (Test-Path ".\models\Modelfile.mark7") { & $ol create jarvis-mark7 -f ".\models\Modelfile.mark7" }
+    if (Test-Path ".\models\Modelfile.coder") { & $ol create jarvis-coder -f ".\models\Modelfile.coder" }
+    if (Test-Path ".\models\Modelfile.cinema") { & $ol create jarvis-cinema -f ".\models\Modelfile.cinema" }
+}
+
+# 5) Compila os executaveis nativos (.exe)
+$csc = Get-ChildItem "$env:WINDIR\Microsoft.NET\Framework64\v4*\csc.exe" | Select-Object -First 1 -ExpandProperty FullName
+if ($csc -and (Test-Path ".\tools\Launcher.cs")) {
+    & $csc /nologo /target:winexe /out:".\Jarvis.exe" ".\tools\Launcher.cs"
+    & $csc /nologo /target:winexe /define:FORCE_LITE /out:".\Jarvis-Lite.exe" ".\tools\Launcher.cs"
+    & $csc /nologo /target:winexe /define:FORCE_PRO /out:".\Jarvis-Pro.exe" ".\tools\Launcher.cs"
+}
+
+Write-Host "`nTudo pronto! Clique duas vezes em Jarvis-$($Profile.Substring(0,1).ToUpper() + $Profile.Substring(1)).exe para iniciar." -ForegroundColor Green

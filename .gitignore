@@ -1,0 +1,25 @@
+# Ambientes virtuais e caches
+.venv/
+ComfyUI/
+__pycache__/
+*.pyc
+
+# Modelos pesados e binários (>50MB) baixados automaticamente pelo setup.ps1 / Jarvis.exe
+models/*.safetensors
+models/*.ckpt
+models/*.onnx
+models/lora/*.safetensors
+voices/*.onnx
+tools/ffmpeg/
+tools/sd/
+tools/*.zip
+
+# Mídias geradas e estado local
+outputs/*.png
+outputs/*.mp4
+outputs/*.webp
+outputs/*.srt
+outputs/*.tmp
+projects/
+workspace/
+memory.json

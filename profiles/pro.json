@@ -1,0 +1,46 @@
+{
+  "backend": "comfy",
+  "llm_model": "jarvis-mark7:latest",
+  "llm_on_cpu": false,
+  "low_memory": false,
+  "image": {
+    "checkpoint": "DreamShaper_8_pruned.safetensors",
+    "width": 512,
+    "height": 768,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "negative": "lowres, blurry, bad anatomy, bad hands, text, watermark, deformed, ugly, jpeg artifacts"
+  },
+  "video": {
+    "unet": "wan2.1_t2v_1.3B_fp16.safetensors",
+    "clip": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "vae": "wan_2.1_vae.safetensors",
+    "width": 480,
+    "height": 320,
+    "length": 33,
+    "fps": 16,
+    "steps": 25,
+    "cfg": 6.0,
+    "sampler": "uni_pc",
+    "scheduler": "simple",
+    "shift": 8.0,
+    "negative": "blurry, low quality, static, distorted, deformed, worst quality, subtitles, watermark"
+  },
+  "long_video": {
+    "script_model": "jarvis-cinema:latest",
+    "script_on_gpu": true,
+    "scenes_per_minute": 5,
+    "image": {
+      "width": 768,
+      "height": 432
+    }
+  },
+  "chat": {
+    "model": "jarvis-mark7:latest",
+    "on_cpu": false,
+    "num_ctx": 8192,
+    "history_chars": 16000
+  }
+}

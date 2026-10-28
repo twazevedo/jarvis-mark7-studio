@@ -1,0 +1,28 @@
+{
+  "port": 8766,
+  "comfy_url": "http://127.0.0.1:8188",
+  "ollama_url": "http://127.0.0.1:11434",
+  "user_title": "senhor",
+  "llm_model": "jarvis-mark7:latest",
+  "llm_on_cpu": true,
+  "low_memory": false,
+  "long_video": {
+    "scenes_per_minute": 5,
+    "words_per_scene": 32,
+    "style": "cinematic documentary still, highly detailed, dramatic lighting, sharp focus, professional photography, 8k",
+    "video_width": 1280,
+    "video_height": 720,
+    "fps": 25,
+    "piper_model": "voices/pt_BR-faber-medium.onnx",
+    "music": "assets/music.mp3"
+  },
+  "chat": {
+    "model": "jarvis-mark7:latest",
+    "on_cpu": true,
+    "num_ctx": 8192,
+    "history_chars": 10000,
+    "keep_alive": "10m",
+    "temperature": 0.65
+  },
+  "unload_before_generate": true
+}

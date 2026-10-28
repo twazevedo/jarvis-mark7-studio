@@ -1,0 +1,36 @@
+{
+  "backend": "sdcpp",
+  "llm_model": "jarvis-mark7:latest",
+  "llm_on_cpu": true,
+  "low_memory": false,
+  "image": {
+    "binary": "tools/sd/sd-cli.exe",
+    "checkpoint": "models/DreamShaper_8_pruned.safetensors",
+    "lora_dir": "models/lora",
+    "lora": "lcm-lora-sdv1-5",
+    "width": 512,
+    "height": 512,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "lcm",
+    "threads": 8
+  },
+  "video": {
+    "seconds": 6
+  },
+  "long_video": {
+    "script_model": "jarvis-cinema:latest",
+    "script_on_gpu": false,
+    "scenes_per_minute": 4,
+    "image": {
+      "width": 640,
+      "height": 384
+    }
+  },
+  "chat": {
+    "model": "jarvis-mark7:latest",
+    "on_cpu": true,
+    "num_ctx": 8192,
+    "history_chars": 10000
+  }
+}
