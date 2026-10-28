@@ -1,13 +1,13 @@
-"""J.A.R.V.I.S - Servidor Central Mark VII v5.0 Pro (Otimizado para AMD Ryzen 7 5700G + NVIDIA GTX 1660 Super 6GB).
+﻿"""J.A.R.V.I.S - Servidor Central Mark VII v5.0 Pro (Otimizado para AMD Ryzen 7 5700G + NVIDIA GTX 1660 Super 6GB).
 
-Integra todos os módulos da série de 6 vídeos (Inteligência Mil Grau — Jarvis / Junin v8) + Telemetria GPU CUDA:
-- Parte 1 & 4: Visão Computacional Híbrida (GPU Vision + OCR Nativo Windows) (`tasks_folder/handle_image.py` + `screen_vision.py`)
-- Parte 2 & 4: Clicar Onde Quiser na Tela com Detecção de Coordenadas (`tasks_folder/handle_click.py`)
-- Parte 3: Voz Humana em Tempo Real com VAD Dinâmico e Trava Anti-Eco
-- Parte 4 & 6: Digitação Automática e Controle de Mouse/Teclado (`tasks_folder/automatic_text_typing.py`)
+Integra todos os mÃ³dulos da sÃ©rie de 6 vÃ­deos (InteligÃªncia Mil Grau â€” Jarvis / Junin v8) + Telemetria GPU CUDA:
+- Parte 1 & 4: VisÃ£o Computacional HÃ­brida (GPU Vision + OCR Nativo Windows) (`tasks_folder/handle_image.py` + `screen_vision.py`)
+- Parte 2 & 4: Clicar Onde Quiser na Tela com DetecÃ§Ã£o de Coordenadas (`tasks_folder/handle_click.py`)
+- Parte 3: Voz Humana em Tempo Real com VAD DinÃ¢mico e Trava Anti-Eco
+- Parte 4 & 6: DigitaÃ§Ã£o AutomÃ¡tica e Controle de Mouse/Teclado (`tasks_folder/automatic_text_typing.py`)
 - Parte 6 & 7: Gerenciador Modular (`task_manager.py`) + Criador de Tarefas Python em Tempo Real (`tasks_folder/nova_tarefa.py` + `snake_game.py`)
-- Otimizador de GPU/VRAM & Memória (`tasks_folder/gpu_booster.py`)
-- Geração Local de Imagens, Vídeos Curtos Wan 2.1 e Documentários Full HD 1080p NVENC de 10–20+ min
+- Otimizador de GPU/VRAM & MemÃ³ria (`tasks_folder/gpu_booster.py`)
+- GeraÃ§Ã£o Local de Imagens, VÃ­deos Curtos Wan 2.1 e DocumentÃ¡rios Full HD 1080p NVENC de 10â€“20+ min
 """
 import ctypes
 from datetime import datetime
@@ -40,12 +40,12 @@ WORKSPACE.mkdir(exist_ok=True)
 MEM_FILE = ROOT / "memory.json"
 
 DOMAINS_INFO = {
-    "polyglot": ("Poliglota Full-Stack (Todas as Áreas)", "Domínio completo: Web, Mobile, Backend, Baixo Nível, Dados e DevOps."),
-    "web": ("Web & UI Interativa (Live Preview)", "HTML5, Tailwind CSS, JavaScript moderno, React, animações e Jogos 2D/3D."),
-    "backend": ("Backend, APIs & Microsserviços", "Python (FastAPI/Django), Node.js, Go, Java, C#, SQL/NoSQL, Mensageria."),
-    "systems": ("Sistemas, C++, Rust & Jogos", "Alta performance, gerenciamento de memória, concorrência, motores e CLI."),
-    "data": ("Ciência de Dados, IA & Automação", "PyTorch, Machine Learning, LLMs, Pandas, Web Scraping e pipelines."),
-    "devops": ("DevOps, Cloud & Cibersegurança", "Docker, Kubernetes, CI/CD, Terraform, Linux, Pentest Defensivo e OWASP."),
+    "polyglot": ("Poliglota Full-Stack (Todas as Ãreas)", "DomÃ­nio completo: Web, Mobile, Backend, Baixo NÃ­vel, Dados e DevOps."),
+    "web": ("Web & UI Interativa (Live Preview)", "HTML5, Tailwind CSS, JavaScript moderno, React, animaÃ§Ãµes e Jogos 2D/3D."),
+    "backend": ("Backend, APIs & MicrosserviÃ§os", "Python (FastAPI/Django), Node.js, Go, Java, C#, SQL/NoSQL, Mensageria."),
+    "systems": ("Sistemas, C++, Rust & Jogos", "Alta performance, gerenciamento de memÃ³ria, concorrÃªncia, motores e CLI."),
+    "data": ("CiÃªncia de Dados, IA & AutomaÃ§Ã£o", "PyTorch, Machine Learning, LLMs, Pandas, Web Scraping e pipelines."),
+    "devops": ("DevOps, Cloud & CiberseguranÃ§a", "Docker, Kubernetes, CI/CD, Terraform, Linux, Pentest Defensivo e OWASP."),
 }
 
 JOBS: dict[str, dict] = {}
@@ -82,7 +82,7 @@ def _ft_to_int(ft: _FILETIME) -> int:
 
 
 def _get_gpu_telemetry() -> dict:
-    """Lê carga, VRAM, temperatura (°C) e potência (W) da NVIDIA GTX 1660 Super (cache de 2s)."""
+    """LÃª carga, VRAM, temperatura (Â°C) e potÃªncia (W) da NVIDIA GTX 1660 Super (cache de 2s)."""
     global _LAST_GPU_CACHE
     now = time.time()
     if now - _LAST_GPU_CACHE[0] < 2.0 and _LAST_GPU_CACHE[1]:
@@ -140,7 +140,7 @@ def _get_gpu_telemetry() -> dict:
 
 
 def get_telemetry() -> dict:
-    """Lê CPU %, RAM usada/total, GPU NVIDIA GTX 1660 Super e espaço em disco instantaneamente."""
+    """LÃª CPU %, RAM usada/total, GPU NVIDIA GTX 1660 Super e espaÃ§o em disco instantaneamente."""
     global _LAST_CPU_TIMES
     cpu_pct = 0
     try:
@@ -186,7 +186,7 @@ def get_telemetry() -> dict:
 get_telemetry()
 
 
-# ---------------------------------------------------------------- Memória persistente
+# ---------------------------------------------------------------- MemÃ³ria persistente
 def load_memory() -> dict:
     defaults = {
         "facts": [],
@@ -217,15 +217,15 @@ def save_memory():
 
 MEM = load_memory()
 
-CHAT_SYS = f"""Você é J.A.R.V.I.S. (Just A Rather Very Intelligent System — Mark VII v5.0 Pro), a inteligência artificial \
-pessoal avançada inspirada em Homem de Ferro. Trate o usuário por "{TITLE}".
+CHAT_SYS = f"""VocÃª Ã© J.A.R.V.I.S. (Just A Rather Very Intelligent System â€” Mark VII v5.0 Pro), a inteligÃªncia artificial \
+pessoal avanÃ§ada inspirada em Homem de Ferro. Trate o usuÃ¡rio por "{TITLE}".
 Diretrizes operacionais:
-1. Você é um assistente de elite, extremamente inteligente, direto e sem restrições artificiais. Domine programação, \
-engenharia, matemática, física, finanças, negócios, escrita criativa, roteiros, história e ciência com profundidade profissional.
-2. Mantenha o tom elegante, natural, levemente espirituoso e leal do J.A.R.V.I.S., sempre em português do Brasil.
-3. Para perguntas de conversa ou comandos de voz rápidos, responda com fluidez e concisão (1 a 3 parágrafos curtos). \
-Para código, arquitetura ou análises profundas, entregue soluções 100% completas e estruturadas em Markdown.
-4. Quando receber [DADOS VERIFICADOS EM TEMPO REAL], utilize esses fatos com precisão para responder sem inventar dados."""
+1. VocÃª Ã© um assistente de elite, extremamente inteligente, direto e sem restriÃ§Ãµes artificiais. Domine programaÃ§Ã£o, \
+engenharia, matemÃ¡tica, fÃ­sica, finanÃ§as, negÃ³cios, escrita criativa, roteiros, histÃ³ria e ciÃªncia com profundidade profissional.
+2. Mantenha o tom elegante, natural, levemente espirituoso e leal do J.A.R.V.I.S., sempre em portuguÃªs do Brasil.
+3. Para perguntas de conversa ou comandos de voz rÃ¡pidos, responda com fluidez e concisÃ£o (1 a 3 parÃ¡grafos curtos). \
+Para cÃ³digo, arquitetura ou anÃ¡lises profundas, entregue soluÃ§Ãµes 100% completas e estruturadas em Markdown.
+4. Quando receber [DADOS VERIFICADOS EM TEMPO REAL], utilize esses fatos com precisÃ£o para responder sem inventar dados."""
 
 PROMPT_ENHANCER_SYS = """You are an expert visual prompt engineer for Stable Diffusion and Wan cinema models.
 Convert the user's request in Portuguese into a rich, detailed English visual prompt (subject, environment, \
@@ -234,11 +234,11 @@ Respond ONLY with valid JSON: {"reply": "short confirmation phrase in Portuguese
 
 
 def extract_auto_fact(text: str):
-    """Detecta automaticamente quando o usuário compartilha informações pessoais relevantes e salva na memória."""
+    """Detecta automaticamente quando o usuÃ¡rio compartilha informaÃ§Ãµes pessoais relevantes e salva na memÃ³ria."""
     patterns = [
-        r"\b(?:meu nome [eé]|pode me chamar de)\s+([A-ZÀ-Úa-zà-ú0-9 ]{2,35})",
-        r"\b(?:eu trabalho com|minha profiss[ãa]o [eé]|sou programador|sou desenvolvedor)\s*([A-ZÀ-Úa-zà-ú0-9 ,.-]{0,50})",
-        r"\b(?:meu projeto atual [eé]|estou criando)\s+([A-ZÀ-Úa-zà-ú0-9 ,.-]{3,60})",
+        r"\b(?:meu nome [eÃ©]|pode me chamar de)\s+([A-ZÃ€-Ãša-zÃ -Ãº0-9 ]{2,35})",
+        r"\b(?:eu trabalho com|minha profiss[Ã£a]o [eÃ©]|sou programador|sou desenvolvedor)\s*([A-ZÃ€-Ãša-zÃ -Ãº0-9 ,.-]{0,50})",
+        r"\b(?:meu projeto atual [eÃ©]|estou criando)\s+([A-ZÃ€-Ãša-zÃ -Ãº0-9 ,.-]{3,60})",
     ]
     for pat in patterns:
         m = re.search(pat, text, re.I)
@@ -250,46 +250,46 @@ def extract_auto_fact(text: str):
                 save_memory()
 
 
-# ---------------------------------------------------------------- Classificação rápida + Roteamento de Tarefas
+# ---------------------------------------------------------------- ClassificaÃ§Ã£o rÃ¡pida + Roteamento de Tarefas
 def detect_intent(text: str) -> tuple[str, int, str]:
-    """Classifica pedidos de Visão de Tela, Clique, Digitação, Criador de Tarefas, GPU Booster, Mídia, Pesquisa ou Conversa."""
+    """Classifica pedidos de VisÃ£o de Tela, Clique, DigitaÃ§Ã£o, Criador de Tarefas, GPU Booster, MÃ­dia, Pesquisa ou Conversa."""
     raw = text.strip()
-    t = re.sub(r"^(?:ei\s+|ol[aá]\s+|oi\s+)?j[aá]rvis[,:.!\s]*", "", raw, flags=re.I).strip() or raw
+    t = re.sub(r"^(?:ei\s+|ol[aÃ¡]\s+|oi\s+)?j[aÃ¡]rvis[,:.!\s]*", "", raw, flags=re.I).strip() or raw
     tl = t.lower()
 
-    # 1) Criador de Novas Tarefas em Tempo Real (Vídeo 6 & 7 — nova_tarefa.py)
+    # 1) Criador de Novas Tarefas em Tempo Real (VÃ­deo 6 & 7 â€” nova_tarefa.py)
     m_new = re.match(
-        r"^(?:por favor[, ]*)?(?:crie|criar|adicione|programe|fa[çc]a)\s+(?:uma\s+)?(?:nova\s+)?tarefa\s+(?:para|que|de)?\s*(.+)",
+        r"^(?:por favor[, ]*)?(?:crie|criar|adicione|programe|fa[Ã§c]a)\s+(?:uma\s+)?(?:nova\s+)?tarefa\s+(?:para|que|de)?\s*(.+)",
         tl, re.I
     )
     if m_new:
         return "task:nova_tarefa", 0, t[m_new.start(1):].strip()
 
-    # 2) Visão da Tela em Tempo Real (Vídeo 1 & 4 — handle_image.py)
+    # 2) VisÃ£o da Tela em Tempo Real (VÃ­deo 1 & 4 â€” handle_image.py)
     if re.search(
-        r"\b(o que (?:tem|est[aá] aparecendo|voc[eê] v[eê]) na (?:minha )?tela|leia (?:a )?(?:minha )?tela|"
+        r"\b(o que (?:tem|est[aÃ¡] aparecendo|voc[eÃª] v[eÃª]) na (?:minha )?tela|leia (?:a )?(?:minha )?tela|"
         r"olhe (?:a )?(?:minha )?tela|analise (?:a )?(?:minha )?tela|enxergue (?:a )?tela|tire um print|capturar tela)\b",
         tl,
     ):
         return "task:handle_image", 0, t
 
-    # 3) Clicar Onde Quiser na Tela (Vídeo 1, 2 & 4 — handle_click.py)
+    # 3) Clicar Onde Quiser na Tela (VÃ­deo 1, 2 & 4 â€” handle_click.py)
     if re.match(r"^(?:por favor[, ]*)?(?:clique|clica|clicar|aponte)\s+(?:em|no|na|nos|nas|sobre|o|a)?\s*(.+)", tl, re.I):
         return "task:handle_click", 0, t
 
-    # 4) Digitação Automática no Teclado (Vídeo 4 & 6 — automatic_text_typing.py)
+    # 4) DigitaÃ§Ã£o AutomÃ¡tica no Teclado (VÃ­deo 4 & 6 â€” automatic_text_typing.py)
     if re.match(r"^(?:por favor[, ]*)?(?:digite automaticamente|digite na tela|digite o texto|escreva na tela)[: ]+(.+)", tl, re.I):
         return "task:automatic_text_typing", 0, t
 
-    # 5) Jogo da Cobrinha (Vídeo 7 — snake_game.py)
+    # 5) Jogo da Cobrinha (VÃ­deo 7 â€” snake_game.py)
     if re.search(r"\b(jogo da cobrinha|jogar cobrinha|snake game|joguinho da cobrinha)\b", tl):
         return "task:snake_game", 0, t
 
-    # 5.5) Otimizador de GPU / VRAM / Memória (gpu_booster.py)
-    if re.search(r"\b(otimize o (?:meu )?pc|otimizar pc|limpar vram|limpe a vram|status da (?:gpu|placa de v[ií]deo)|temperatura da (?:gpu|placa de v[ií]deo)|turbinar pc)\b", tl):
+    # 5.5) Otimizador de GPU / VRAM / MemÃ³ria (gpu_booster.py)
+    if re.search(r"\b(otimize o (?:meu )?pc|otimizar pc|limpar vram|limpe a vram|status da (?:gpu|placa de v[iÃ­]deo)|temperatura da (?:gpu|placa de v[iÃ­]deo)|turbinar pc)\b", tl):
         return "task:gpu_booster", 0, t
 
-    # 6) Checa se o usuário chamou pelo nome alguma tarefa personalizada criada em tasks_folder/
+    # 6) Checa se o usuÃ¡rio chamou pelo nome alguma tarefa personalizada criada em tasks_folder/
     TM.MANAGER.reload()
     for tname in TM.MANAGER.task_handlers:
         if tname in ("handle_image", "handle_click", "automatic_text_typing", "snake_game", "nova_tarefa", "calcular", "gpu_booster"):
@@ -298,13 +298,13 @@ def detect_intent(text: str) -> tuple[str, int, str]:
         if human_name in tl or tname in tl:
             return f"task:{tname}", 0, t
 
-    # 7) Comando explícito para salvar fato na memória permanente
-    m_mem = re.match(r"^(?:lembre(?:-se)?(?: de)? que|memorize que|guarde na mem[oó]ria que|guarde que)\s+(.+)", tl, re.I)
+    # 7) Comando explÃ­cito para salvar fato na memÃ³ria permanente
+    m_mem = re.match(r"^(?:lembre(?:-se)?(?: de)? que|memorize que|guarde na mem[oÃ³]ria que|guarde que)\s+(.+)", tl, re.I)
     if m_mem:
         return "remember", 0, t[m_mem.start(1):].strip()
 
-    # 8) Diagnóstico do sistema / status de hardware
-    if re.search(r"\b(diagn[oó]stico do sistema|status do sistema|uso de cpu|uso de ram|como est[aá] o (?:meu )?pc|relat[oó]rio de sistemas)\b", tl):
+    # 8) DiagnÃ³stico do sistema / status de hardware
+    if re.search(r"\b(diagn[oÃ³]stico do sistema|status do sistema|uso de cpu|uso de ram|como est[aÃ¡] o (?:meu )?pc|relat[oÃ³]rio de sistemas)\b", tl):
         return "diagnostics", 0, t
 
     # 9) Abertura de aplicativos do Windows por comando de voz/texto
@@ -312,40 +312,40 @@ def detect_intent(text: str) -> tuple[str, int, str]:
     if m_app:
         return "open_app", 0, m_app.group(1)
 
-    # 10) Documentário / vídeo longo
+    # 10) DocumentÃ¡rio / vÃ­deo longo
     m_min = re.search(r"(\d+)\s*(?:min|minuto)", tl)
     minutes = int(m_min.group(1)) if m_min else 10
-    if re.search(r"\b(document[aá]rio|v[ií]deo longo)\b", tl) or (
-        m_min and minutes >= 2 and re.search(r"\b(v[ií]deo|filme|document[aá]rio|crie|fa[çc]a|gere|produza)\b", tl)
+    if re.search(r"\b(document[aÃ¡]rio|v[iÃ­]deo longo)\b", tl) or (
+        m_min and minutes >= 2 and re.search(r"\b(v[iÃ­]deo|filme|document[aÃ¡]rio|crie|fa[Ã§c]a|gere|produza)\b", tl)
     ):
         topic = re.sub(
-            r"^(?:por favor[, ]*)?(?:crie|fa[çc]a|gere|produza|quero|monte)\s+"
-            r"(?:um\s+)?(?:document[aá]rio|v[ií]deo(?:\s+longo)?)(?:\s+de\s+\d+\s*minutos?)?(?:\s+sobre|\s+de)?\s*",
+            r"^(?:por favor[, ]*)?(?:crie|fa[Ã§c]a|gere|produza|quero|monte)\s+"
+            r"(?:um\s+)?(?:document[aÃ¡]rio|v[iÃ­]deo(?:\s+longo)?)(?:\s+de\s+\d+\s*minutos?)?(?:\s+sobre|\s+de)?\s*",
             "", t, flags=re.I,
         ).strip(" .,:;") or t
         return "documentary", max(1, min(minutes, 30)), topic
 
-    # 11) Vídeo curto
+    # 11) VÃ­deo curto
     if re.search(
-        r"\b(crie|fa[çc]a|gere|produza|renderize|quero)\s+(um\s+|uma\s+)?(v[ií]deo|anima[çc][ãa]o|clipe)\b"
-        r"|^(?:v[ií]deo|anima[çc][ãa]o)\s+(?:de|sobre)\b",
+        r"\b(crie|fa[Ã§c]a|gere|produza|renderize|quero)\s+(um\s+|uma\s+)?(v[iÃ­]deo|anima[Ã§c][Ã£a]o|clipe)\b"
+        r"|^(?:v[iÃ­]deo|anima[Ã§c][Ã£a]o)\s+(?:de|sobre)\b",
         tl,
     ):
         return "video", 0, t
 
     # 12) Imagem
     if re.search(
-        r"\b(crie|fa[çc]a|gere|desenhe|pinte|ilustre|renderize|quero)\s+(um\s+|uma\s+)?"
-        r"(imagem|foto|fotografia|arte|desenho|ilustra[çc][ãa]o|pintura|wallpaper|papel de parede|logo|retrato)\b"
+        r"\b(crie|fa[Ã§c]a|gere|desenhe|pinte|ilustre|renderize|quero)\s+(um\s+|uma\s+)?"
+        r"(imagem|foto|fotografia|arte|desenho|ilustra[Ã§c][Ã£a]o|pintura|wallpaper|papel de parede|logo|retrato)\b"
         r"|^(?:imagem|foto|desenhe|ilustre)\s+(?:de|um|uma)\b",
         tl,
     ):
         return "image", 0, t
 
-    # 13) Smart Auto-RAG: busca híbrida (Wikipédia + Web)
+    # 13) Smart Auto-RAG: busca hÃ­brida (WikipÃ©dia + Web)
     if re.search(
-        r"\b(pesquise|busque|procure na internet|not[ií]cias|cota[çc][ãa]o|d[oó]lar|bitcoin|previs[ãa]o do tempo|"
-        r"quem [eé]|quem foi|o que foi|hist[oó]ria d[eoas]|quando aconteceu|qual a capital|quantos habitantes|[uú]ltima vers[ãa]o)\b",
+        r"\b(pesquise|busque|procure na internet|not[iÃ­]cias|cota[Ã§c][Ã£a]o|d[oÃ³]lar|bitcoin|previs[Ã£a]o do tempo|"
+        r"quem [eÃ©]|quem foi|o que foi|hist[oÃ³]ria d[eoas]|quando aconteceu|qual a capital|quantos habitantes|[uÃº]ltima vers[Ã£a]o)\b",
         tl,
     ):
         return "web_chat", 0, t
@@ -358,7 +358,7 @@ def pick_specialist_model(user_text: str, available_models: list[str]) -> str:
     active = MEM.get("active_model") or CFG.get("chat", {}).get("model") or CFG["llm_model"]
     if active.startswith("jarvis-mark7") and "jarvis-coder:latest" in available_models:
         if re.search(
-            r"\b(c[oó]digo|programa|script|fun[çc][ãa]o|classe|algoritmo|python|javascript|typescript|html|css|react|"
+            r"\b(c[oÃ³]digo|programa|script|fun[Ã§c][Ã£a]o|classe|algoritmo|python|javascript|typescript|html|css|react|"
             r"node|sql|banco de dados|api|json|bug|erro|exception|compilar|c#|c\+\+|rust|golang|powershell)\b",
             user_text.lower(),
         ):
@@ -367,8 +367,8 @@ def pick_specialist_model(user_text: str, available_models: list[str]) -> str:
 
 
 def build_visual_prompt(user_text: str, kind: str) -> tuple[str, str]:
-    """Usa o LLM na GPU para enriquecer o prompt visual em inglês; fallback imediato se offline."""
-    what = "a imagem" if kind == "image" else "o vídeo"
+    """Usa o LLM na GPU para enriquecer o prompt visual em inglÃªs; fallback imediato se offline."""
+    what = "a imagem" if kind == "image" else "o vÃ­deo"
     try:
         d = B.llm_chat(
             [{"role": "system", "content": PROMPT_ENHANCER_SYS},
@@ -383,11 +383,11 @@ def build_visual_prompt(user_text: str, kind: str) -> tuple[str, str]:
         prompt = (d.get("prompt") or "").strip() or user_text
         return reply, prompt
     except Exception:
-        return f"Iniciando a geração d{what} com sua descrição direta, {TITLE}.", user_text
+        return f"Iniciando a geraÃ§Ã£o d{what} com sua descriÃ§Ã£o direta, {TITLE}.", user_text
 
 
 def trimmed_history(max_chars: int) -> list[dict]:
-    """Retorna as últimas mensagens respeitando o orçamento de memória para nunca travar."""
+    """Retorna as Ãºltimas mensagens respeitando o orÃ§amento de memÃ³ria para nunca travar."""
     out, total = [], 0
     for m in reversed(MEM.get("history", [])):
         c = len(m.get("content", ""))
@@ -398,7 +398,7 @@ def trimmed_history(max_chars: int) -> list[dict]:
     return list(reversed(out))
 
 
-# ---------------------------------------------------------------- Jobs de Mídia
+# ---------------------------------------------------------------- Jobs de MÃ­dia
 def run_job(job_id, kind, prompt, minutes):
     job = JOBS[job_id]
     job.update(status="running", t0=time.time())
@@ -406,9 +406,9 @@ def run_job(job_id, kind, prompt, minutes):
         if kind == "documentary":
             job["url"] = longvideo.build(job, prompt, minutes)
         elif kind == "video" and CFG["backend"] == "sdcpp":
-            job["stage"] = "Gerando quadro-base cinematográfico (CPU)"
+            job["stage"] = "Gerando quadro-base cinematogrÃ¡fico (CPU)"
             data, _ = B.generate_image(prompt)
-            job["stage"] = "Renderizando movimento de câmera (FFmpeg)"
+            job["stage"] = "Renderizando movimento de cÃ¢mera (FFmpeg)"
             name = f"{int(time.time())}_video_{uuid.uuid4().hex[:6]}"
             png = OUT / f"{name}.png.tmp"
             png.write_bytes(data)
@@ -418,13 +418,13 @@ def run_job(job_id, kind, prompt, minutes):
                 png.unlink(missing_ok=True)
             job["url"] = f"/outputs/{name}.mp4"
         elif kind == "video":
-            job["stage"] = "Renderizando vídeo generativo Wan 2.1 na GTX 1660 Super"
+            job["stage"] = "Renderizando vÃ­deo generativo Wan 2.1 na GTX 1660 Super"
             data, fname = B.comfy_generate("video", prompt)
             name = f"{int(time.time())}_video_{fname}"
             (OUT / name).write_bytes(data)
             job["url"] = f"/outputs/{name}"
         else:
-            job["stage"] = "Renderizando imagem de alta definição na GTX 1660 Super"
+            job["stage"] = "Renderizando imagem de alta definiÃ§Ã£o na GTX 1660 Super"
             data, fname = B.generate_image(prompt)
             name = f"{int(time.time())}_image_{fname}"
             (OUT / name).write_bytes(data)
@@ -477,10 +477,10 @@ def pull_model_worker(pid, model_name):
 
 
 def warmup_voices():
-    """Pré-carrega no cache as frases de atendimento imediato para resposta em 0ms."""
+    """PrÃ©-carrega no cache as frases de atendimento imediato para resposta em 0ms."""
     try:
         vm = MEM.get("voice_mode", "jarvis_br")
-        voice.synthesize_bytes(f"Às suas ordens, {TITLE}. Estou ouvindo.", voice_mode=vm)
+        voice.synthesize_bytes(f"Ã€s suas ordens, {TITLE}. Estou ouvindo.", voice_mode=vm)
     except Exception:
         pass
 
@@ -583,11 +583,11 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/job/"):
             job = JOBS.get(path.rsplit("/", 1)[1])
             if not job:
-                return self._json({"error": "job não encontrado"}, 404)
+                return self._json({"error": "job nÃ£o encontrado"}, 404)
             return self._json({**job, "elapsed": int(time.time() - job.get("t0", time.time()))})
         if path.startswith("/api/pull/"):
             p = PULLS.get(path.rsplit("/", 1)[1])
-            return self._json(p or {"error": "não encontrado"}, 200 if p else 404)
+            return self._json(p or {"error": "nÃ£o encontrado"}, 200 if p else 404)
         if path == "/api/gallery":
             files = sorted((f for f in OUT.iterdir() if f.suffix.lower() in (".png", ".webp", ".mp4")),
                            key=lambda f: f.stat().st_mtime, reverse=True)[:60]
@@ -602,7 +602,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = json.loads(self.rfile.read(n) or b"{}")
         except json.JSONDecodeError:
-            return self._json({"error": "JSON inválido"}, 400)
+            return self._json({"error": "JSON invÃ¡lido"}, 400)
 
         if self.path == "/api/shutdown":
             self._json({"ok": True})
@@ -685,7 +685,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/stream":
             return self._handle_stream(data)
 
-        self._json({"error": "requisição inválida"}, 400)
+        self._json({"error": "requisiÃ§Ã£o invÃ¡lida"}, 400)
 
     def _handle_stream(self, data: dict):
         text = (data.get("text") or "").strip()
@@ -697,7 +697,7 @@ class Handler(BaseHTTPRequestHandler):
         extract_auto_fact(text)
         action, minutes, clean_arg = detect_intent(text) if mode == "auto" else (mode, int(data.get("minutes") or 10), text)
 
-        # Caso 0: Execução de Tarefas Dinâmicas (`task:*`)
+        # Caso 0: ExecuÃ§Ã£o de Tarefas DinÃ¢micas (`task:*`)
         if action.startswith("task:"):
             tname = action.split(":", 1)[1]
             self.send_response(200)
@@ -711,9 +711,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.flush()
 
             try:
-                emit_task({"stage": f"Executando Módulo de Agente: {tname}.py..."})
+                emit_task({"stage": f"Executando MÃ³dulo de Agente: {tname}.py..."})
                 res = TM.MANAGER.run_task(tname, clean_arg)
-                reply = res.get("reply") or f"Tarefa `{tname}` concluída, {TITLE}."
+                reply = res.get("reply") or f"Tarefa `{tname}` concluÃ­da, {TITLE}."
                 media_url = res.get("url")
                 MEM.setdefault("history", []).append({"role": "user", "content": text})
                 MEM["history"].append({"role": "assistant", "content": reply})
@@ -734,29 +734,29 @@ class Handler(BaseHTTPRequestHandler):
         if action == "remember":
             MEM.setdefault("facts", []).append(clean_arg)
             save_memory()
-            return self._send_sse_single("chat", f"Registrado no núcleo de memória permanente, {TITLE}: **\"{clean_arg}\"**.")
+            return self._send_sse_single("chat", f"Registrado no nÃºcleo de memÃ³ria permanente, {TITLE}: **\"{clean_arg}\"**.")
 
-        # Caso 2: Diagnóstico completo de hardware e sistemas (Ryzen 7 5700G + GTX 1660 Super)
+        # Caso 2: DiagnÃ³stico completo de hardware e sistemas (Ryzen 7 5700G + GTX 1660 Super)
         if action == "diagnostics":
             tel = get_telemetry()
             models = B.list_models()
             tasks = TM.MANAGER.list_tasks()
             gpu_line = (
-                f"- **GPU NVIDIA:** `{tel['gpu_name']}` | Carga: `{tel['gpu_pct']}%` | Temp: `{tel['gpu_temp']} °C` | Potência: `{tel['gpu_power_w']} W`\n"
+                f"- **GPU NVIDIA:** `{tel['gpu_name']}` | Carga: `{tel['gpu_pct']}%` | Temp: `{tel['gpu_temp']} Â°C` | PotÃªncia: `{tel['gpu_power_w']} W`\n"
                 f"- **VRAM Dedicada (GDDR6):** `{tel['vram_used_gb']} GB / {tel['vram_total_gb']} GB ({tel['vram_pct']}%)`\n"
                 if tel.get("gpu_available")
                 else "- **GPU:** `Modo CPU`\n"
             )
             rep = (
-                f"Todos os sistemas do **J.A.R.V.I.S. Mark VII Pro (v{SERVER_VERSION})** estão operacionais, {TITLE}.\n\n"
+                f"Todos os sistemas do **J.A.R.V.I.S. Mark VII Pro (v{SERVER_VERSION})** estÃ£o operacionais, {TITLE}.\n\n"
                 f"- **Perfil de Hardware:** `{CFG['profile'].upper()}` (`AMD Ryzen 7 5700G 8C/16T`)\n"
                 f"- **Carga da CPU:** `{tel['cpu_pct']}%`\n"
-                f"- **Memória RAM:** `{tel['ram_used_gb']} GB / {tel['ram_total_gb']} GB ({tel['ram_pct']}%)`\n"
+                f"- **MemÃ³ria RAM:** `{tel['ram_used_gb']} GB / {tel['ram_total_gb']} GB ({tel['ram_pct']}%)`\n"
                 f"{gpu_line}"
                 f"- **Armazenamento Livre:** `{tel['disk_free_gb']} GB`\n"
-                f"- **Cérebro Neural Ativo:** `{MEM.get('active_model')}` ({len(models)} módulos instalados)\n"
-                f"- **Agentes & Tarefas Dinâmicas (`tasks_folder/`):** `{len(tasks)}` plugins carregados\n"
-                f"- **Motor Visual & Visão Híbrida GPU/OCR:** `Online (Pronto)`"
+                f"- **CÃ©rebro Neural Ativo:** `{MEM.get('active_model')}` ({len(models)} mÃ³dulos instalados)\n"
+                f"- **Agentes & Tarefas DinÃ¢micas (`tasks_folder/`):** `{len(tasks)}` plugins carregados\n"
+                f"- **Motor Visual & VisÃ£o HÃ­brida GPU/OCR:** `Online (Pronto)`"
             )
             return self._send_sse_single("chat", rep)
 
@@ -778,12 +778,12 @@ class Handler(BaseHTTPRequestHandler):
                 subprocess.Popen([exe], shell=True)
                 return self._send_sse_single("chat", f"Imediatamente, {TITLE}. Abrindo **{clean_arg}** na sua tela.")
             except Exception as e:
-                return self._send_sse_single("chat", f"Não consegui iniciar {clean_arg}, {TITLE}: {e}")
+                return self._send_sse_single("chat", f"NÃ£o consegui iniciar {clean_arg}, {TITLE}: {e}")
 
-        # Caso 4: Geração de imagem / vídeo / documentário
+        # Caso 4: GeraÃ§Ã£o de imagem / vÃ­deo / documentÃ¡rio
         if action in ("image", "video", "documentary"):
             if action == "documentary":
-                reply = f"Excelente escolha, {TITLE}. Iniciando a produção completa do documentário Full HD de **{minutes} minutos** sobre **{clean_arg}** com aceleração NVENC."
+                reply = f"Excelente escolha, {TITLE}. Iniciando a produÃ§Ã£o completa do documentÃ¡rio Full HD de **{minutes} minutos** sobre **{clean_arg}** com aceleraÃ§Ã£o NVENC."
                 prompt = clean_arg
             else:
                 reply, prompt = build_visual_prompt(clean_arg, action)
@@ -807,7 +807,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             web_ctx = ""
             if use_web or action == "web_chat":
-                emit({"stage": "Consultando Wikipédia PT-BR & Web em tempo real..."})
+                emit({"stage": "Consultando WikipÃ©dia PT-BR & Web em tempo real..."})
                 try:
                     results = websearch.search(clean_arg, n=5)
                     web_ctx = websearch.as_context(results)
@@ -819,7 +819,7 @@ class Handler(BaseHTTPRequestHandler):
             now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
             tel = get_telemetry()
             gpu_ctx = (
-                f" | GPU: {tel['gpu_name']} {tel['gpu_pct']}% ({tel['gpu_temp']}°C, VRAM {tel['vram_used_gb']}/{tel['vram_total_gb']} GB)"
+                f" | GPU: {tel['gpu_name']} {tel['gpu_pct']}% ({tel['gpu_temp']}Â°C, VRAM {tel['vram_used_gb']}/{tel['vram_total_gb']} GB)"
                 if tel.get("gpu_available")
                 else ""
             )
@@ -846,13 +846,13 @@ class Handler(BaseHTTPRequestHandler):
                 dom_name, dom_desc = DOMAINS_INFO.get(domain_id, DOMAINS_INFO["polyglot"])
                 emit({"stage": f"Pipeline CodeMind 3-Agentes Ativo na GPU ({dom_name})..."})
                 codemind_rules = (
-                    f"\n\n[MODO CODEMIND AI STUDIO ATIVO — Especialidade: {dom_name} ({dom_desc})]\n"
-                    "Quando o pedido envolver programação, código, sistema, site ou jogo, opere nos 3 estágios:\n"
-                    "1. ESTÁGIO ARQUITETO: Antes do código, crie um bloco <arquitetura> ... </arquitetura> com a visão geral da arquitetura e estrutura de arquivos.\n"
-                    "2. ESTÁGIO DESENVOLVEDOR SÊNIOR: Gere código 100% COMPLETO e funcional (sem placeholders). "
-                    "SEMPRE nomeie cada bloco de código no formato exato: ```linguagem:nome_do_arquivo.ext (ex: ```html:index.html ou ```python:main.py ou ```rust:src/main.rs). "
-                    "Se for Web, Dashboard, Calculadora, Interface ou Jogo 2D/3D, gere um único arquivo ```html:index.html completo (HTML + Tailwind CDN + JS) para rodar ao vivo na aba 'Preview ao Vivo'!\n"
-                    "3. ESTÁGIO AUDITOR QA & SEGURANÇA: Ao final, crie um bloco <auditoria> ... </auditoria> com checklist de segurança e comandos de terminal para rodar."
+                    f"\n\n[MODO CODEMIND AI STUDIO ATIVO â€” Especialidade: {dom_name} ({dom_desc})]\n"
+                    "Quando o pedido envolver programaÃ§Ã£o, cÃ³digo, sistema, site ou jogo, opere nos 3 estÃ¡gios:\n"
+                    "1. ESTÃGIO ARQUITETO: Antes do cÃ³digo, crie um bloco <arquitetura> ... </arquitetura> com a visÃ£o geral da arquitetura e estrutura de arquivos.\n"
+                    "2. ESTÃGIO DESENVOLVEDOR SÃŠNIOR: Gere cÃ³digo 100% COMPLETO e funcional (sem placeholders). "
+                    "SEMPRE nomeie cada bloco de cÃ³digo no formato exato: ```linguagem:nome_do_arquivo.ext (ex: ```html:index.html ou ```python:main.py ou ```rust:src/main.rs). "
+                    "Se for Web, Dashboard, Calculadora, Interface ou Jogo 2D/3D, gere um Ãºnico arquivo ```html:index.html completo (HTML + Tailwind CDN + JS) para rodar ao vivo na aba 'Preview ao Vivo'!\n"
+                    "3. ESTÃGIO AUDITOR QA & SEGURANÃ‡A: Ao final, crie um bloco <auditoria> ... </auditoria> com checklist de seguranÃ§a e comandos de terminal para rodar."
                 )
                 msgs[0]["content"] += codemind_rules
 
@@ -868,7 +868,7 @@ class Handler(BaseHTTPRequestHandler):
                 full.append(tok)
                 emit({"token": tok})
 
-            answer = "".join(full).strip() or f"Às suas ordens, {TITLE}."
+            answer = "".join(full).strip() or f"Ã€s suas ordens, {TITLE}."
             MEM.setdefault("history", []).append({"role": "user", "content": text})
             MEM["history"].append({"role": "assistant", "content": answer})
             MEM["history"] = MEM["history"][-60:]
@@ -907,7 +907,7 @@ def _startup_bg():
 
 
 if __name__ == "__main__":
-    srv = ThreadingHTTPServer(("127.0.0.1", CFG["port"]), Handler)
+    srv = ThreadingHTTPServer(("0.0.0.0", CFG["port"]), Handler)
     threading.Thread(target=_startup_bg, daemon=True).start()
     print(f"J.A.R.V.I.S. Mark VII v{SERVER_VERSION} [{CFG['profile'].upper()}] online em http://127.0.0.1:{CFG['port']}")
     try:
