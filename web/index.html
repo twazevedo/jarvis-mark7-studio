@@ -766,46 +766,157 @@
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.35); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--c); }
+
+  /* =====================================================================
+     LAYOUT RESPONSIVO — tudo cabe na tela (1920x1080 maximizado até 1280x720)
+     Nada é cortado: colunas fluidas, cabeçalho em 1 linha, reator que encolhe
+     conforme a altura, e rótulos que viram só ícones em telas menores.
+     ===================================================================== */
+  :root {
+    --gap: 10px;
+    --head-h: 54px;
+    --bar-h: 70px;
+    --col-gal: clamp(180px, 15vw, 290px);
+    --col-center: clamp(250px, 20vw, 350px);
+    --rs: clamp(120px, 24vh, 224px);   /* tamanho do Reator Arc */
+  }
+  html, body { height: 100%; }
+  body {
+    height: 100vh;
+    height: 100dvh;
+    grid-template-columns: var(--col-gal) var(--col-center) minmax(0, 1fr);
+    grid-template-rows: var(--head-h) minmax(0, 1fr) var(--bar-h);
+    gap: var(--gap);
+    padding: var(--gap);
+  }
+  body > * { min-width: 0; min-height: 0; }
+  .panel { padding: 10px; }
+
+  /* Cabeçalho: sempre 1 linha, sem quebra; se faltar espaço rola na horizontal */
+  header { padding: 6px 14px !important; gap: 14px; }
+  .brand { flex-shrink: 0; gap: 10px; min-width: 0; }
+  .brand-logo { width: 32px; height: 32px; flex-shrink: 0; }
+  .brand h1 { font-size: 18px; letter-spacing: 5px; white-space: nowrap; }
+  .brand-sub { font-size: 10px; letter-spacing: 1.5px; white-space: nowrap; }
+  .top-controls {
+    flex-wrap: nowrap;
+    gap: 7px;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    flex: 1;
+  }
+  .top-controls > :first-child { margin-left: auto; }  /* alinha à direita, mas continua rolável se faltar espaço */
+  .top-controls::-webkit-scrollbar { display: none; }
+  .top-controls > * { flex-shrink: 0; }
+  .top-controls select { text-overflow: ellipsis; padding: 4px 6px; font-size: 12.5px; }
+  .sel-model { max-width: 230px; }
+  .sel-domain { max-width: 190px; }
+  .sel-voice { max-width: 180px; }
+  .badge-pill { padding: 4px 8px; }
+
+  /* Coluna central: reator proporcional à altura da tela */
+  #center { gap: 7px; }
+  .reactor-wrap { width: var(--rs); height: var(--rs); }
+  #waveCanvas { width: var(--rs); height: var(--rs); }
+  #reactor { width: calc(var(--rs) * 0.786); height: calc(var(--rs) * 0.786); }
+  .tel-top span, .tel-top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tel-top { gap: 6px; }
+  #heardPreview { max-width: 45% !important; }
+
+  /* Chips de ação rápida: quebram em linhas em vez de sumirem para a direita */
+  .quick-deck { flex-wrap: wrap; overflow-x: visible; gap: 5px; }
+  .chip { padding: 4px 9px; font-size: 11.5px; }
+
+  /* Barra de comando inferior */
+  #bar { padding: 8px 12px !important; gap: 7px; }
+  #bar textarea { min-width: 0; height: 52px; padding: 10px 12px; }
+  #bar select { max-width: 190px; }
+  #bar button { padding: 10px 12px; }
+
+  /* Painel de artefatos acompanha as alturas do cabeçalho/barra */
+  #artifactDrawer {
+    top: calc(var(--gap) * 2 + var(--head-h));
+    bottom: calc(var(--gap) * 2 + var(--bar-h));
+    right: var(--gap);
+    width: min(52vw, calc(100vw - var(--gap) * 2));
+    min-width: 0;
+  }
+  #artifactDrawer.expanded { left: var(--gap); width: auto; }
+
+  /* ≤ 1700px: esconde subtítulo da marca */
+  @media (max-width: 1700px) {
+    .brand-sub { display: none; }
+    .sel-model { max-width: 190px; }
+    .sel-domain { max-width: 160px; }
+    .sel-voice { max-width: 150px; }
+  }
+  /* ≤ 1500px: botões viram ícones (texto continua no tooltip) */
+  @media (max-width: 1500px) {
+    .top-controls .lbl { display: none; }
+    .badge-pill .lbl { display: none; }
+    .sel-model { max-width: 170px; }
+    .sel-domain { max-width: 140px; }
+    .sel-voice { max-width: 130px; }
+  }
+  /* ≤ 1280px: barra inferior também só com ícones e títulos menores */
+  @media (max-width: 1280px) {
+    #bar .lbl { display: none; }
+    #bar select { max-width: 150px; }
+    .brand h1 { font-size: 15px; letter-spacing: 3px; }
+    .sel-domain { display: none; }
+  }
+  /* ≤ 1100px: galeria sai da grade para dar espaço ao terminal */
+  @media (max-width: 1100px) {
+    body { grid-template-columns: var(--col-center) minmax(0, 1fr); }
+    header, #bar { grid-column: 1 / 3; }
+    body > aside.panel { display: none; }
+  }
+  /* Telas baixas (≤ 800px de altura): compacta a coluna central */
+  @media (max-height: 800px) {
+    :root { --head-h: 48px; --bar-h: 62px; --gap: 8px; --rs: clamp(110px, 22vh, 180px); }
+    #bar textarea { height: 44px; padding: 8px 10px; }
+    #bar button { padding: 8px 10px; }
+    .tel-card { padding: 4px 7px; }
+    .sensor-box { padding: 5px 8px; }
+    .panel-header { margin-bottom: 6px; }
+  }
 </style>
 </head>
 <body data-state="idle">
 <header class="panel">
   <div class="brand">
     <div class="brand-logo">MK7</div>
-    <div>
+    <div class="brand-text">
       <h1>J.A.R.V.I.S.</h1>
-      <span class="brand-sub">STARK INDUSTRIES • SISTEMA HOLOGRÁFICO v5.0 PRO • RYZEN 7 5700G + GTX 1660S</span>
+      <span class="brand-sub">MARK VII v5.0 PRO • RYZEN 7 5700G • GTX 1660S</span>
     </div>
   </div>
   <div class="top-controls">
-    <span id="prof" class="badge-pill gold">PERFIL PRO</span>
-    <span class="badge-pill"><i id="dComfy" class="dot"></i>MOTOR VISUAL</span>
-    <span class="badge-pill"><i id="dLlm" class="dot"></i>CÉREBRO IA</span>
-    <label>MÓDULO NEURAL:
-      <select id="modelSel" title="Especialista de IA ativo"></select>
-    </label>
-    <button class="mini" id="pullBtn" title="Baixar novos modelos Ollama">+ MODELO</button>
-    <label>ÁREA CODEMIND:
-      <select id="domainSel" title="Especialidade Poliglota do CodeMind AI Studio">
-        <option value="polyglot">🌐 Poliglota Full-Stack (Todas)</option>
-        <option value="web">🎨 Web & UI (Live Preview)</option>
-        <option value="backend">⚙️ Backend, APIs & SQL</option>
-        <option value="systems">🦀 Sistemas, C++, Rust & Jogos</option>
-        <option value="data">🧠 Ciência de Dados & IA</option>
-        <option value="devops">🛡️ DevOps & Cibersegurança</option>
-      </select>
-    </label>
-    <button class="mini active" id="multiAgentBtn" title="Pipeline CodeMind: 1. Arquiteto + 2. Dev Sênior + 3. Auditor QA">🤖 3 AGENTES</button>
-    <button class="mini" id="artToggleBtn" onclick="toggleArtifactDrawer()" title="Abrir painel de Artefatos Editáveis & Preview ao Vivo">🧩 ARTIFACTS (0)</button>
-    <label>VOZ:
-      <select id="voiceSel" title="Timbre de voz do J.A.R.V.I.S.">
-        <option value="jarvis_br">🎬 JARVIS HUMANO (PT-BR Estúdio)</option>
-        <option value="jarvis_original">🇬🇧 PAUL BETTANY (Original Filme)</option>
-        <option value="jarvis_offline">🔒 JARVIS OFFLINE (PT-BR Local)</option>
-      </select>
-    </label>
-    <button class="mini active" id="ttsToggle" title="Ativar/desativar voz do Jarvis">🔊 VOZ</button>
-    <button class="mini" id="clearBtn" title="Limpar histórico de conversa e liberar memória RAM">🧹 LIMPAR RAM</button>
+    <span id="prof" class="badge-pill gold" title="Perfil de hardware ativo">PRO</span>
+    <span class="badge-pill" title="Motor visual (ComfyUI)"><i id="dComfy" class="dot"></i><span class="lbl">VISUAL</span></span>
+    <span class="badge-pill" title="Cérebro IA (Ollama)"><i id="dLlm" class="dot"></i><span class="lbl">IA</span></span>
+    <select id="modelSel" class="sel-model" title="Módulo neural (especialista de IA ativo)"></select>
+    <button class="mini" id="pullBtn" title="Baixar novos modelos Ollama">＋<span class="lbl"> MODELO</span></button>
+    <select id="domainSel" class="sel-domain" title="Área CodeMind (especialidade poliglota)">
+      <option value="polyglot">🌐 Poliglota Full-Stack</option>
+      <option value="web">🎨 Web &amp; UI (Live Preview)</option>
+      <option value="backend">⚙️ Backend, APIs &amp; SQL</option>
+      <option value="systems">🦀 Sistemas, C++ &amp; Rust</option>
+      <option value="data">🧠 Dados &amp; IA</option>
+      <option value="devops">🛡️ DevOps &amp; Segurança</option>
+    </select>
+    <button class="mini active" id="multiAgentBtn" title="Pipeline CodeMind: 1. Arquiteto + 2. Dev Sênior + 3. Auditor QA">🤖<span class="lbl"> 3 AGENTES</span></button>
+    <button class="mini" id="artToggleBtn" onclick="toggleArtifactDrawer()" title="Abrir painel de Artefatos Editáveis &amp; Preview ao Vivo">🧩<span class="lbl"> ARTIFACTS</span> (<span id="artCount">0</span>)</button>
+    <select id="voiceSel" class="sel-voice" title="Timbre de voz do J.A.R.V.I.S.">
+      <option value="jarvis_br">🎬 Jarvis PT-BR Estúdio</option>
+      <option value="jarvis_original">🇬🇧 Paul Bettany (Filme)</option>
+      <option value="jarvis_offline">🔒 Jarvis Offline PT-BR</option>
+    </select>
+    <button class="mini active" id="ttsToggle" title="Ativar/desativar voz do Jarvis">🔊<span class="lbl"> VOZ</span></button>
+    <button class="mini" id="clearBtn" title="Limpar histórico de conversa e liberar memória RAM/VRAM">🧹<span class="lbl"> RAM</span></button>
   </div>
 </header>
 
@@ -896,6 +1007,7 @@
     <div class="chip" onclick="showDynamicTasks()">🧩 Plugins (tasks_folder)</div>
     <div class="chip" onclick="send('Jarvis, faça um diagnóstico do sistema')">⚡ Diagnóstico Stark</div>
     <div class="chip" onclick="send('Jarvis, otimize o meu PC e limpe a VRAM')">🚀 Otimizar GPU/VRAM</div>
+    <div class="chip" onclick="send('Jarvis, faça o backup dos projetos no outro computador')">📦 Backup Rede (192.168.100.63)</div>
     <div class="chip" onclick="quickPrompt('image')">🖼 Criar Arte Cinema</div>
     <div class="chip" onclick="quickPrompt('doc')">📽 Documentário Full HD</div>
   </div>
@@ -905,19 +1017,19 @@
 
 <div id="bar" class="panel">
   <select id="modeSel" title="Escolha a ação ou deixe em AUTO">
-    <option value="auto">⚡ MODO: AUTO INTELIGENTE</option>
-    <option value="chat">💬 CONVERSA / ENGENHARIA</option>
+    <option value="auto">⚡ AUTO INTELIGENTE</option>
+    <option value="chat">💬 CONVERSA / CÓDIGO</option>
     <option value="image">🖼 GERAR IMAGEM</option>
     <option value="video">🎬 VÍDEO CURTO</option>
-    <option value="documentary">📽 DOCUMENTÁRIO LONGO</option>
+    <option value="documentary">📽 DOCUMENTÁRIO</option>
   </select>
-  <input id="minInp" type="number" min="1" max="30" value="15" style="width:68px;display:none" title="Duração em minutos (1 a 30)">
-  <textarea id="txt" placeholder="Bata 2 palmas 👏👏, diga 'Jarvis...' ou digite qualquer comando, código, imagem ou documentário de 10-20 min..." autofocus></textarea>
-  <button id="stopBtn" class="stop" title="Interromper fala ou geração atual">⏹ PARAR</button>
-  <button id="webBtn" title="Forçar pesquisa ao vivo na Wikipédia + Web">🌐 RAG / WEB</button>
-  <button id="send">ENVIAR</button>
-  <button id="mic" title="Ativar escuta direta imediata">🎤 FALAR</button>
-  <button id="wake" class="active" title="Sensor acústico contínuo: 2 palmas ou palavra 'Jarvis'">👏👂 SENSORES</button>
+  <input id="minInp" type="number" min="1" max="30" value="15" style="width:62px;display:none" title="Duração em minutos (1 a 30)">
+  <textarea id="txt" placeholder="Bata 2 palmas 👏👏, diga 'Jarvis...' ou digite qualquer comando, código, imagem ou documentário..." autofocus></textarea>
+  <button id="stopBtn" class="stop" title="Interromper fala ou geração atual">⏹<span class="lbl"> PARAR</span></button>
+  <button id="webBtn" title="Forçar pesquisa ao vivo na Wikipédia + Web">🌐<span class="lbl"> WEB</span></button>
+  <button id="send" title="Enviar (Enter)">ENVIAR</button>
+  <button id="mic" title="Ativar escuta direta imediata">🎤<span class="lbl"> FALAR</span></button>
+  <button id="wake" class="active" title="Sensor acústico contínuo: 2 palmas ou palavra 'Jarvis'">👏<span class="lbl"> SENSORES</span></button>
 </div>
 
 <div id="viewer"></div>
@@ -1132,7 +1244,7 @@ function toggleArtifactDrawer() {
 function openArtifacts(fileList, preferredId) {
   if (!fileList || !fileList.length) return;
   artifacts = fileList;
-  $("#artToggleBtn").textContent = `🧩 ARTIFACTS (${artifacts.length})`;
+  $("#artCount").textContent = artifacts.length;
   const chosen = artifacts.find(f => f.id === preferredId) || artifacts.find(f => f.canPreview) || artifacts[0];
   activeArtifactId = chosen.id;
   $("#artifactDrawer").style.display = "flex";
@@ -1882,7 +1994,7 @@ async function status() {
   try {
     const s = await (await fetch("/api/status")).json();
     title = s.title || title;
-    $("#prof").textContent = "PERFIL " + (s.profile || "").toUpperCase();
+    $("#prof").textContent = (s.profile || "").toUpperCase();
     $("#dComfy").className = "dot " + (s.comfy ? "on" : "");
     $("#dLlm").className = "dot " + (s.llm ? "on" : "");
     cachedFacts = s.facts_list || [];

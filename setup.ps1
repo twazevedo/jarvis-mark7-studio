@@ -7,11 +7,20 @@ Set-Location $PSScriptRoot
 Write-Host "== Configurando J.A.R.V.I.S. Mark VII v5.0 [Perfil: $($Profile.ToUpper())] ==" -ForegroundColor Cyan
 
 function Get-Model($url, $dest) {
+    # Baixa para "<arquivo>.part" e so renomeia quando completo (arquivo parcial nunca e tratado como pronto).
+    # Se a conexao travar (< 50 KB/s por 45 s), o curl aborta e retoma do ponto onde parou.
     if (Test-Path $dest) { Write-Host "[ok] $(Split-Path $dest -Leaf) ja existe"; return }
     New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+    $part = "$dest.part"
     Write-Host "[baixando] $(Split-Path $dest -Leaf)"
-    & curl.exe -L --fail --retry 5 -C - -o $dest $url
-    if ($LASTEXITCODE -ne 0) { throw "Falha ao baixar $url" }
+    for ($try = 1; $try -le 8; $try++) {
+        & curl.exe -L --fail --connect-timeout 20 --speed-limit 51200 --speed-time 45 `
+            --retry 3 --retry-delay 3 -C - -o $part $url
+        if ($LASTEXITCODE -eq 0) { Move-Item $part $dest -Force; return }
+        Write-Host "[retomando] tentativa $try falhou (codigo $LASTEXITCODE), continuando de onde parou..." -ForegroundColor Yellow
+        Start-Sleep 3
+    }
+    throw "Falha ao baixar $url"
 }
 
 # 0) Gerenciador ultra-rapido 'uv' portatil (instala Python 3.12 automaticamente mesmo em PC sem Python!)
@@ -46,7 +55,11 @@ New-Item -ItemType Directory -Force -Path .\assets | Out-Null
 
 # 2) FFmpeg embutido (portatil em tools\ffmpeg\bin com suporte a NVENC)
 if (-not (Test-Path ".\tools\ffmpeg\bin\ffmpeg.exe") -and -not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-    Get-Model "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" ".\tools\ffmpeg.zip"
+    try {
+        Get-Model "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" ".\tools\ffmpeg.zip"
+    } catch {
+        Get-Model "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" ".\tools\ffmpeg.zip"
+    }
     Expand-Archive .\tools\ffmpeg.zip .\tools\ff_tmp -Force
     New-Item -ItemType Directory -Force -Path .\tools\ffmpeg\bin | Out-Null
     Get-ChildItem .\tools\ff_tmp -Recurse -Filter "*.exe" | Copy-Item -Destination .\tools\ffmpeg\bin -Force
@@ -84,8 +97,14 @@ else {
 # 4) Ollama (cerebro de linguagem local acelerado pela GTX 1660 Super no Pro)
 $ol = if (Get-Command ollama -ErrorAction SilentlyContinue) { (Get-Command ollama).Source } elseif (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe") { "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe" } else { "" }
 if (-not $ol) {
-    winget install -e --id Ollama.Ollama --accept-source-agreements --accept-package-agreements --silent
     $ol = "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe"
+    winget install -e --id Ollama.Ollama --accept-source-agreements --accept-package-agreements --silent
+    if (-not (Test-Path $ol)) {
+        # Plano B: instalador oficial direto do GitHub (instalacao por usuario, sem admin)
+        Get-Model "https://github.com/ollama/ollama/releases/latest/download/OllamaSetup.exe" ".\tools\OllamaSetup.exe"
+        Start-Process ".\tools\OllamaSetup.exe" -ArgumentList "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES" -Wait
+        Remove-Item ".\tools\OllamaSetup.exe" -Force -ErrorAction SilentlyContinue
+    }
 }
 if (Test-Path $ol) {
     if (-not (Get-Process ollama -ErrorAction SilentlyContinue)) {
